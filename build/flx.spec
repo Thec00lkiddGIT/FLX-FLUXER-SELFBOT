@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(SPECPATH)
+if not (ROOT / "gui.py").is_file():
+    ROOT = ROOT.parent
 
 block_cipher = None
 

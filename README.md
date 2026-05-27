@@ -4,12 +4,19 @@ Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://w
 
 ## Downloads (macOS and Windows)
 
-Build standalone apps from source:
+**Releases:** [github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases](https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases)
 
-| Platform | Command | Output |
-|----------|---------|--------|
-| **macOS** | `bash scripts/build_mac.sh` | `dist/FLX FLUXER SELFBOT.app` |
-| **Windows** | `scripts\build_windows.bat` | `dist\FLX-FLUXER-SELFBOT\FLX-FLUXER-SELFBOT.exe` |
+| Platform | File |
+|----------|------|
+| **macOS** (Apple Silicon) | `FLX-FLUXER-SELFBOT-macOS.zip` -> open `FLX FLUXER SELFBOT.app` |
+| **Windows** | `FLX-FLUXER-SELFBOT-Windows.zip` -> run `FLX-FLUXER-SELFBOT.exe` |
+
+Build from source:
+
+| Platform | Command |
+|----------|---------|
+| **macOS** | `bash scripts/build_mac.sh` |
+| **Windows** | `scripts\build_windows.bat` |
 
 **Windows note:** WebView2 runtime is required for the native window (usually already installed on Windows 10/11). Use `python gui.py --web` if the native window fails.
 

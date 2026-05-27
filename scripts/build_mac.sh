@@ -12,6 +12,9 @@ source .venv-build/bin/activate
 pip install -q -U pip
 pip install -q -r requirements.txt -r requirements-build.txt
 pyinstaller build/flx.spec --clean --noconfirm
+cd dist
+ditto -c -k --sequesterRsrc --keepParent "FLX FLUXER SELFBOT.app" FLX-FLUXER-SELFBOT-macOS.zip
 echo ""
-echo "Done. Run:"
-echo "  open \"dist/FLX FLUXER SELFBOT.app\""
+echo "Done."
+echo "  App:  dist/FLX FLUXER SELFBOT.app"
+echo "  Zip:  dist/FLX-FLUXER-SELFBOT-macOS.zip"

@@ -10,7 +10,9 @@ call .venv-build\Scripts\activate.bat
 python -m pip install -q -U pip
 pip install -q -r requirements.txt -r requirements-build.txt
 pyinstaller build\flx.spec --clean --noconfirm
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\FLX-FLUXER-SELFBOT' -DestinationPath 'dist\FLX-FLUXER-SELFBOT-Windows.zip' -Force"
 
 echo.
-echo Done. Run:
-echo   dist\FLX-FLUXER-SELFBOT\FLX-FLUXER-SELFBOT.exe
+echo Done.
+echo   Folder: dist\FLX-FLUXER-SELFBOT\
+echo   Zip:    dist\FLX-FLUXER-SELFBOT-Windows.zip
