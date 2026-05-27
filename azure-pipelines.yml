@@ -1,0 +1,25 @@
+trigger:
+  - main
+  - v*
+
+pool:
+  vmImage: windows-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.12"
+    displayName: Use Python 3.12
+
+  - script: |
+      python -m pip install -U pip
+      pip install -r requirements.txt -r requirements-build.txt
+      pyinstaller build/flx.spec --clean --noconfirm
+      powershell Compress-Archive -Path dist\FLX-FLUXER-SELFBOT -DestinationPath dist\FLX-FLUXER-SELFBOT-Windows.zip -Force
+    displayName: Build Windows release
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: dist
+      ArtifactName: FLX-Windows
+      publishLocation: Container
