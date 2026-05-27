@@ -1,0 +1,16 @@
+{
+  "scripts": [
+    {
+      "id": "echo",
+      "name": "Echo Script",
+      "author": "Flx",
+      "description": "Echoes your message back",
+      "usage": "<p>echo <text>",
+      "command": "echo",
+      "help": "Echoes your message back",
+      "commands": ["echo"],
+      "enabled": true,
+      "format": "flxscript"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "flx",
+  "version": "1.0.0",
+  "description": "Fluxer selfbot for fluxer.app / web.fluxer.app",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["fluxer", "selfbot", "fluxer.app"],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "fluxer-selfbot": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,250 @@
+"""Minimal Fluxer REST client (urllib, no extra deps)."""
+
+from __future__ import annotations
+
+import json
+import uuid
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Any
+
+from flx.textutil import MAX_MESSAGE_LENGTH, split_message_content
+
+
+class FluxerREST:
+    def __init__(self, token: str, api_base: str) -> None:
+        self.token = token.strip()
+        if self.token.lower().startswith("bearer "):
+            self.token = self.token[7:].strip()
+        base = api_base.rstrip("/")
+        if base.endswith("/api"):
+            base = base[: -len("/api")]
+        if not base.endswith("/v1"):
+            base = f"{base}/v1"
+        self.base = base
+
+    def _request(
+        self,
+        method: str,
+        route: str,
+        *,
+        body: dict | None = None,
+        auth: bool = True,
+    ) -> Any:
+        url = f"{self.base}{route}" if route.startswith("/") else f"{self.base}/{route}"
+        data = None
+        headers = {
+            "User-Agent": "Flx/1.0 (Fluxer selfbot)",
+            "Accept": "application/json",
+        }
+        if auth:
+            headers["Authorization"] = self.token
+        if body is not None:
+            data = json.dumps(body).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                raw = resp.read()
+                if not raw:
+                    return None
+                return json.loads(raw.decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
+
+    def get_me(self) -> dict:
+        return self._request("GET", "/users/@me")
+
+    def get_gateway(self) -> dict:
+        """Bot-only on many instances; user selfbots should fall back to wss://gateway.fluxer.app."""
+        return self._request("GET", "/gateway")
+
+    def _message_payload(
+        self,
+        content: str,
+        *,
+        reply_to: str | None = None,
+        channel_id: str | None = None,
+        guild_id: str | None = None,
+        attachments: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        if len(content) > MAX_MESSAGE_LENGTH:
+            content = content[:MAX_MESSAGE_LENGTH]
+        payload: dict[str, Any] = {"content": content}
+        if attachments:
+            payload["attachments"] = attachments
+        if reply_to and channel_id:
+            ref: dict[str, Any] = {
+                "message_id": reply_to,
+                "channel_id": channel_id,
+            }
+            if guild_id:
+                ref["guild_id"] = guild_id
+            payload["message_reference"] = ref
+        return payload
+
+    def _encode_multipart(
+        self,
+        fields: dict[str, str],
+        files: list[tuple[str, bytes, str]],
+    ) -> tuple[bytes, str]:
+        boundary = f"----Flx{uuid.uuid4().hex}"
+        parts: list[bytes] = []
+        for name, value in fields.items():
+            parts.append(
+                f"--{boundary}\r\n"
+                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'
+                f"{value}\r\n".encode()
+            )
+        for index, (filename, data, content_type) in enumerate(files):
+            parts.append(
+                f"--{boundary}\r\n"
+                f'Content-Disposition: form-data; name="files[{index}]"; '
+                f'filename="{filename}"\r\n'
+                f"Content-Type: {content_type}\r\n\r\n".encode()
+            )
+            parts.append(data)
+            parts.append(b"\r\n")
+        parts.append(f"--{boundary}--\r\n".encode())
+        return b"".join(parts), boundary
+
+    def _send_message_once(
+        self,
+        channel_id: str,
+        content: str,
+        *,
+        reply_to: str | None = None,
+        guild_id: str | None = None,
+        files: list[tuple[str, bytes]] | None = None,
+    ) -> dict:
+        if files:
+            attachment_meta = [
+                {"id": index, "filename": name}
+                for index, (name, _) in enumerate(files)
+            ]
+            payload = self._message_payload(
+                content,
+                reply_to=reply_to,
+                channel_id=channel_id,
+                guild_id=guild_id,
+                attachments=attachment_meta,
+            )
+            multipart_files = [
+                (name, data, "application/octet-stream")
+                for name, data in files
+            ]
+            body, boundary = self._encode_multipart(
+                {"payload_json": json.dumps(payload)},
+                multipart_files,
+            )
+            url = f"{self.base}/channels/{channel_id}/messages"
+            req = urllib.request.Request(
+                url,
+                data=body,
+                headers={
+                    "Authorization": self.token,
+                    "User-Agent": "Flx/1.0 (Fluxer selfbot)",
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
+                },
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    raw = resp.read()
+                    return json.loads(raw.decode("utf-8")) if raw else {}
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", errors="replace")
+                raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
+
+        payload = self._message_payload(
+            content,
+            reply_to=reply_to,
+            channel_id=channel_id,
+            guild_id=guild_id,
+        )
+        return self._request("POST", f"/channels/{channel_id}/messages", body=payload) or {}
+
+    def send_message(
+        self,
+        channel_id: str,
+        content: str,
+        *,
+        reply_to: str | None = None,
+        guild_id: str | None = None,
+        files: list[tuple[str, bytes]] | None = None,
+    ) -> dict:
+        chunks = split_message_content(content)
+        if not chunks:
+            if files:
+                chunks = [""]
+            else:
+                return {}
+
+        last: dict = {}
+        for index, chunk in enumerate(chunks):
+            last = self._send_message_once(
+                channel_id,
+                chunk,
+                reply_to=reply_to if index == 0 else None,
+                guild_id=guild_id,
+                files=files if index == 0 else None,
+            )
+        return last
+
+    def edit_message(self, channel_id: str, message_id: str, content: str) -> dict:
+        chunks = split_message_content(content)
+        if not chunks:
+            return {}
+        return self._request(
+            "PATCH",
+            f"/channels/{channel_id}/messages/{message_id}",
+            body={"content": chunks[0]},
+        )
+
+    def delete_message(self, channel_id: str, message_id: str) -> None:
+        self._request("DELETE", f"/channels/{channel_id}/messages/{message_id}")
+
+    def set_presence(self, status: str) -> None:
+        self._request("PATCH", "/users/@me/settings", body={"status": status})
+
+    @staticmethod
+    def _encode_emoji(emoji: str) -> str:
+        return urllib.parse.quote(emoji, safe="")
+
+    def add_reaction(self, channel_id: str, message_id: str, emoji: str) -> None:
+        enc = self._encode_emoji(emoji)
+        self._request(
+            "PUT",
+            f"/channels/{channel_id}/messages/{message_id}/reactions/{enc}/@me",
+        )
+
+    def remove_user_reaction(
+        self,
+        channel_id: str,
+        message_id: str,
+        emoji: str,
+        user_id: str,
+    ) -> None:
+        enc = self._encode_emoji(emoji)
+        self._request(
+            "DELETE",
+            f"/channels/{channel_id}/messages/{message_id}/reactions/{enc}/{user_id}",
+        )
+
+    def ban_member(
+        self,
+        guild_id: str,
+        user_id: str,
+        *,
+        delete_message_days: int = 0,
+        reason: str | None = None,
+    ) -> None:
+        body: dict[str, Any] = {"delete_message_days": delete_message_days}
+        if reason:
+            body["reason"] = reason
+        self._request("PUT", f"/guilds/{guild_id}/bans/{user_id}", body=body)
+
+    def kick_member(self, guild_id: str, user_id: str) -> None:
+        self._request("DELETE", f"/guilds/{guild_id}/members/{user_id}")

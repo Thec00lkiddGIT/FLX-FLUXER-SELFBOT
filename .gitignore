@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/pyinstaller/
+.venv/
+.venv-build/
+.env
+*.log
+.DS_Store
+__pycache__/
+*.py[cod]
+*.spec.bak
+.Python
+*.egg-info/
+.idea/
+.vscode/
