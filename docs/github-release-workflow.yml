@@ -1,0 +1,93 @@
+# Copy this file to .github/workflows/release.yml on GitHub to enable CI builds.
+# Or: gh auth refresh -h github.com -s workflow && git push origin main
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Build macOS app
+        run: pyinstaller build/flx.spec --clean --noconfirm
+
+      - name: Zip macOS release
+        run: |
+          cd dist
+          ditto -c -k --sequesterRsrc --keepParent "FLX FLUXER SELFBOT.app" FLX-FLUXER-SELFBOT-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FLX-FLUXER-SELFBOT-macOS
+          path: dist/FLX-FLUXER-SELFBOT-macOS.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Build Windows app
+        run: pyinstaller build/flx.spec --clean --noconfirm
+
+      - name: Zip Windows release
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/FLX-FLUXER-SELFBOT" -DestinationPath "dist/FLX-FLUXER-SELFBOT-Windows.zip" -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FLX-FLUXER-SELFBOT-Windows
+          path: dist/FLX-FLUXER-SELFBOT-Windows.zip
+
+  publish:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          name: FLX FLUXER SELFBOT ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          files: |
+            artifacts/FLX-FLUXER-SELFBOT-macOS/FLX-FLUXER-SELFBOT-macOS.zip
+            artifacts/FLX-FLUXER-SELFBOT-Windows/FLX-FLUXER-SELFBOT-Windows.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
