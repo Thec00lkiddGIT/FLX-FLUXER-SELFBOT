@@ -15,6 +15,70 @@ from flx.config import glseries_api_token, glseries_base_url
 TIMEOUT_SECONDS = 45
 MAX_MESSAGE_LEN = 3800
 
+FILTER_KEYS = frozenset(
+    {
+        "fortiguard",
+        "lightspeed",
+        "paloalto",
+        "blocksiweb",
+        "blocksiai",
+        "blocksiguardian",
+        "linewize",
+        "cisco",
+        "securly",
+        "goguardian",
+        "goguardianv2",
+        "goguardianai",
+        "lanschool",
+        "lanschoolair",
+        "contentkeeper",
+        "aristotle",
+        "senso",
+        "deledao",
+        "iboss",
+        "barracuda",
+        "dnsfilter",
+        "qustodio",
+        "sophos",
+        "zscaler",
+        "gaggle",
+        "smoothwall",
+        "safedns",
+        "ruckus",
+        "unifi",
+        "webroot",
+        "nextdns",
+        "netsweeper",
+        "hapara",
+        "forcepoint",
+        "cleanbrowsing",
+        "adguard",
+        "googlesafebrowsing",
+        "opendns",
+        "watchguard",
+        "cloudflareintel",
+        "cloudflarefamily",
+        "quad9",
+        "trellix",
+        "controld",
+        "dragonflyai",
+        "norton",
+        "ciracs",
+        "safesurfer",
+    }
+)
+
+
+def parse_check_args(args: str) -> tuple[str | None, str]:
+    parts = args.split()
+    if not parts:
+        raise ValueError("missing url")
+    if parts[0].lower() in FILTER_KEYS:
+        if len(parts) < 2:
+            raise ValueError("missing url after filter name")
+        return parts[0].lower(), parts[1]
+    return None, args
+
 
 @dataclass(frozen=True)
 class FilterResult:

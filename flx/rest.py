@@ -88,6 +88,37 @@ class FluxerREST:
         result = self._request("GET", f"/channels/{channel_id}")
         return result if isinstance(result, dict) else {}
 
+    def list_channel_messages(
+        self,
+        channel_id: str,
+        *,
+        limit: int = 50,
+        before: str | None = None,
+    ) -> list[dict]:
+        limit = max(1, min(int(limit), 100))
+        query = urllib.parse.urlencode(
+            {k: v for k, v in (("limit", str(limit)), ("before", before)) if v}
+        )
+        route = f"/channels/{channel_id}/messages"
+        if query:
+            route = f"{route}?{query}"
+        result = self._request("GET", route)
+        return result if isinstance(result, list) else []
+
+    def create_guild_channel(
+        self,
+        guild_id: str,
+        *,
+        name: str,
+        parent_id: str | None = None,
+        type_: int = 0,
+    ) -> dict:
+        body: dict[str, Any] = {"name": name, "type": type_}
+        if parent_id:
+            body["parent_id"] = parent_id
+        result = self._request("POST", f"/guilds/{guild_id}/channels", body=body)
+        return result if isinstance(result, dict) else {}
+
     def get_message(self, channel_id: str, message_id: str) -> dict:
         result = self._request(
             "GET",

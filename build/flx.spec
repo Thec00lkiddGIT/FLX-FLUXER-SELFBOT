@@ -18,6 +18,7 @@ block_cipher = None
 datas = [
     (str(ROOT / "flx" / "gui" / "static"), "flx/gui/static"),
     (str(ROOT / "scripts" / "hub"), "scripts/hub"),
+    (str(ROOT / "scripts" / "community"), "scripts/community"),
     (str(ROOT / ".env.example"), "."),
 ]
 
@@ -38,6 +39,7 @@ hiddenimports = [
     "flx.targets",
     "flx.textutil",
     "flx.script_hub",
+    "flx.community_hub",
     "flx.fluxerscript",
     "flx.snowflake",
     "flx.user_info",

@@ -1,4 +1,4 @@
-"""Built-in Fluxer selfbot commands (ported from Ibot)."""
+"""Built-in Fluxer selfbot commands."""
 
 from __future__ import annotations
 
@@ -8,9 +8,7 @@ from dataclasses import dataclass, field
 from flx.config import command_prefix
 from flx.dadjoke import dadjoke_reply
 from flx.fluxerscript import CommandContext, FlxMessage
-from flx.glcheck import bulk_reply, check_reply
-from flx.httpcat import fetch_httpcat_image, httpcat_caption
-from flx.pokemon import pokemon_lookup
+from flx.glcheck import bulk_reply
 from flx.microlink import screenshot_lookup
 from flx.poof import poof_from_message
 from flx.osint import credits_reply, search_reply
@@ -24,59 +22,6 @@ from flx.youtube import youtube_reply
 
 PREFIX = command_prefix()
 
-FILTER_KEYS = frozenset(
-    {
-        "fortiguard",
-        "lightspeed",
-        "paloalto",
-        "blocksiweb",
-        "blocksiai",
-        "blocksiguardian",
-        "linewize",
-        "cisco",
-        "securly",
-        "goguardian",
-        "goguardianv2",
-        "goguardianai",
-        "lanschool",
-        "lanschoolair",
-        "contentkeeper",
-        "aristotle",
-        "senso",
-        "deledao",
-        "iboss",
-        "barracuda",
-        "dnsfilter",
-        "qustodio",
-        "sophos",
-        "zscaler",
-        "gaggle",
-        "smoothwall",
-        "safedns",
-        "ruckus",
-        "unifi",
-        "webroot",
-        "nextdns",
-        "netsweeper",
-        "hapara",
-        "forcepoint",
-        "cleanbrowsing",
-        "adguard",
-        "googlesafebrowsing",
-        "opendns",
-        "watchguard",
-        "cloudflareintel",
-        "cloudflarefamily",
-        "quad9",
-        "trellix",
-        "controld",
-        "dragonflyai",
-        "norton",
-        "ciracs",
-        "safesurfer",
-    }
-)
-
 COMMANDS: list[tuple[str, str]] = [
     ("ping", "Returns pong"),
     ("gay", "Random percentage joke"),
@@ -85,15 +30,11 @@ COMMANDS: list[tuple[str, str]] = [
     ("qr", "QR code image + caption"),
     ("youtube", "search | video | trans (SerpAPI)"),
     ("weather", "City weather (C99.nl)"),
-    ("check", "URL filter check (GLSeries)"),
     ("bulk", "Bulk URL check (up to 3)"),
     ("osint", "OSINT Industries lookup"),
     ("help", "List built-in and hub commands"),
-    ("echo", "Repeat your text"),
     ("status", "Set presence: online | idle | dnd | invisible"),
     ("purge", "Delete your recent messages in this channel"),
-    ("httpcat", "http.cat status image (e.g. 404)"),
-    ("pokemon", "PokéAPI lookup (name, id, or random)"),
     ("poof", "Remove image background (attach image, Poof.bg)"),
     ("screenshot", "Screenshot a URL (Microlink)"),
     ("info", "user - profile, avatar, snowflake decode"),
@@ -106,17 +47,6 @@ class BuiltinResult:
     replies: list[str] = field(default_factory=list)
     files: list[tuple[str, bytes]] = field(default_factory=list)
     delete_invocation: bool = True
-
-
-def _parse_check_args(args: str) -> tuple[str | None, str]:
-    parts = args.split()
-    if not parts:
-        raise ValueError("missing url")
-    if parts[0].lower() in FILTER_KEYS:
-        if len(parts) < 2:
-            raise ValueError("missing url after filter name")
-        return parts[0].lower(), parts[1]
-    return None, args
 
 
 def _usage(cmd: str, text: str) -> str:
@@ -177,46 +107,6 @@ def dispatch_builtin(
             return BuiltinResult(replies=[str(exc)])
         except RuntimeError as exc:
             return _err("QR", exc)
-
-    if name == "httpcat":
-        code_s = args.strip()
-        if not code_s:
-            return BuiltinResult(
-                replies=[_usage("httpcat", "<status code>\nExample: `!httpcat 404`")]
-            )
-        try:
-            code = int(code_s)
-        except ValueError:
-            return BuiltinResult(replies=["Status code must be a number (100-599)."])
-        try:
-            image, filename = fetch_httpcat_image(code)
-            return BuiltinResult(
-                replies=[httpcat_caption(code)],
-                files=[(filename, image)],
-            )
-        except ValueError as exc:
-            return BuiltinResult(replies=[str(exc)])
-        except RuntimeError as exc:
-            return _err("httpcat", exc)
-
-    if name == "pokemon":
-        query = args.strip()
-        if not query:
-            return BuiltinResult(
-                replies=[
-                    _usage(
-                        "pokemon",
-                        "<name|id|random>\nExamples: `!pokemon pikachu` `!pokemon 25` `!pokemon random`",
-                    )
-                ]
-            )
-        try:
-            text, files = pokemon_lookup(query)
-            return BuiltinResult(replies=[text], files=files)
-        except ValueError as exc:
-            return BuiltinResult(replies=[str(exc)])
-        except RuntimeError as exc:
-            return _err("Pokémon", exc)
 
     if name == "poof":
         try:
@@ -283,21 +173,6 @@ def dispatch_builtin(
             return BuiltinResult(replies=[str(exc)])
         except RuntimeError as exc:
             return _err("Weather", exc)
-
-    if name == "check":
-        if not args:
-            return BuiltinResult(
-                replies=[
-                    _usage("check", "<url>\nOptional: `!check linewize example.com`")
-                ]
-            )
-        try:
-            filter_key, url = _parse_check_args(args)
-            return BuiltinResult(replies=check_reply(url, filter_key=filter_key))
-        except ValueError as exc:
-            return BuiltinResult(replies=[str(exc)])
-        except RuntimeError as exc:
-            return _err("Check", exc)
 
     if name == "bulk":
         urls = args.split()
@@ -410,11 +285,6 @@ def dispatch_builtin(
         for cmd, help_text in DANGER_COMMANDS:
             lines.append(f"`{PREFIX}{cmd}` - {help_text}")
         return BuiltinResult(replies=["\n".join(lines)])
-
-    if name == "echo":
-        if not args.strip():
-            return BuiltinResult(replies=[_usage("echo", "<text>")])
-        return BuiltinResult(replies=[args.strip()])
 
     if name == "status":
         status = (args.strip().lower() or "online")

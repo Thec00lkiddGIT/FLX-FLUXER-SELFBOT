@@ -1,8 +1,8 @@
 # FLX
 
-Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://web.fluxer.app), with an **Ibot-style dashboard** and **Nighty-style FlxScript** hub.
+Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://web.fluxer.app), with a **web dashboard** and **FlxScript** hub (personal + community scripts).
 
-**Current version:** 1.0.4
+**Current version:** 1.0.6
 
 ## Downloads
 
@@ -45,9 +45,9 @@ python gui.py
 
 Browser UI: `python gui.py --web` -> http://127.0.0.1:8766/
 
-## FlxScript (like Nighty)
+## FlxScript
 
-Write Python in **Script Hub** using `@flxScript`, `@bot.command`, and `@bot.listen`.
+Write Python in **Script Hub** using `@flxScript`, `@bot.command`, and `@bot.listen`. The **Community** tab ships starter scripts (`echo`, `httpcat`, `pokemon`, `check`) - open it and click **Add to Script Hub** to install them.
 
 Full guide: [docs/FLXSCRIPT_GUIDE.md](docs/FLXSCRIPT_GUIDE.md)
 
@@ -57,11 +57,8 @@ Full guide: [docs/FLXSCRIPT_GUIDE.md](docs/FLXSCRIPT_GUIDE.md)
 |---------|-------------|
 | `!ping` | Latency check |
 | `!help` | List commands |
-| `!echo` | Repeat text |
 | `!status` | Set presence |
 | `!purge [n]` | Delete your recent messages |
-| `!httpcat <code>` | Post an http.cat status image |
-| `!pokemon <name\|id\|random>` | Pokemon sprite and stats (PokeAPI) |
 | `!poof` | Remove image background (reply with image; needs `POOF_API_KEY`) |
 | `!screenshot <url>` | Screenshot a URL (Microlink) |
 | `!info user` | Profile, avatar, snowflake decode |

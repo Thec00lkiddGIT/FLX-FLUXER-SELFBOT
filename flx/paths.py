@@ -16,7 +16,7 @@ FLUXER_TOKEN=
 FLUXER_API_URL=https://api.fluxer.app
 PREFIX=!
 
-# API keys (same as Ibot - optional unless you use those commands)
+# Optional API keys (only needed for matching commands)
 C99_WEATHER_KEY=
 GLSERIES_TOKEN=
 GLSERIES_BASE_URL=https://live.glseries.net/api/v1
@@ -82,6 +82,11 @@ def hub_dir() -> Path:
 
 def bundled_hub_dir() -> Path | None:
     root = project_root() / "scripts" / "hub"
+    return root if root.is_dir() else None
+
+
+def bundled_community_dir() -> Path | None:
+    root = project_root() / "scripts" / "community"
     return root if root.is_dir() else None
 
 

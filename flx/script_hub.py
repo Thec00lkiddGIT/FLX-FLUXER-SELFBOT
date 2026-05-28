@@ -22,7 +22,6 @@ from flx.fluxerscript import (
     getScriptsPath,
     flxScript,
     log,
-    nightyScript,
     set_script_context,
     updateConfigData,
 )
@@ -199,7 +198,6 @@ def _inject_module(script_id: str, path: Path) -> tuple[Any, ScriptBot]:
         {
             "bot": bot,
             "flxScript": flxScript,
-            "nightyScript": nightyScript,
             "getConfigData": getConfigData,
             "updateConfigData": updateConfigData,
             "getScriptsPath": getScriptsPath,
@@ -517,8 +515,8 @@ def dispatch_hub_command(
     command: str,
     args: str,
     message: FlxMessage,
-) -> tuple[str | list[str] | None, bool]:
-    """Returns (reply payload, delete_invocation)."""
+) -> tuple[str | list[str] | None, bool, list[tuple[str, bytes]]]:
+    """Returns (reply payload, delete_invocation, file attachments)."""
     ensure_registry()
     name = command.strip().lower()
     hit = _registry_commands.get(name)
@@ -526,7 +524,7 @@ def dispatch_hub_command(
         script_id, bot = hit
         spec = bot.commands.get(name)
         if spec is None:
-            return None, False
+            return None, False, []
         ctx = CommandContext(
             message=message,
             script_id=script_id,
@@ -539,10 +537,12 @@ def dispatch_hub_command(
         finally:
             set_script_context(None)
         delete = ctx._delete_invocation
-        if ctx.replies:
-            payload = ctx.replies if len(ctx.replies) > 1 else ctx.replies[0]
-            return payload, delete
-        return None, delete
+        if ctx.replies or ctx.files:
+            payload = None
+            if ctx.replies:
+                payload = ctx.replies if len(ctx.replies) > 1 else ctx.replies[0]
+            return payload, delete, ctx.files
+        return None, delete, []
 
     script = get_script_by_command(name)
     if script is None:
@@ -551,11 +551,11 @@ def dispatch_hub_command(
                 script = s
                 break
     if script is None:
-        return None, False
+        return None, False, []
 
     path = _script_path(script.id)
     if not path.is_file():
-        return None, False
+        return None, False, []
     try:
         _, bot = _inject_module(script.id, path)
     except Exception:
@@ -563,7 +563,7 @@ def dispatch_hub_command(
     if bot and bot.commands:
         return dispatch_hub_command(command, args, message)
     legacy = _run_legacy(script.id, args)
-    return legacy, False
+    return legacy, False, []
 
 
 def _test_message(cmd: str, args: str) -> FlxMessage:
@@ -660,7 +660,7 @@ def run_script(script_id: str, args: str) -> str | list[str]:
     cmd = script.command if script else ""
     if cmd:
         fake = _test_message(cmd, args)
-        result, _ = dispatch_hub_command(cmd, args, fake)
+        result, _, _files = dispatch_hub_command(cmd, args, fake)
         if result is not None:
             return result
     return _run_legacy(script_id, args)

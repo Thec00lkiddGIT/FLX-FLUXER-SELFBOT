@@ -2,6 +2,11 @@ const API = "";
 let lastEventId = 0;
 let activeScriptId = "";
 let hubScripts = [];
+let communityScripts = [];
+let hubTab = "mine";
+let hubSearchQuery = "";
+let hubDirty = false;
+let hubSavedSnapshot = "";
 
 function el(id) {
   return document.getElementById(id);
@@ -151,7 +156,7 @@ function applyStatus(s) {
   el("display-name").textContent = name;
   el("profile-name").textContent = name;
   el("profile-handle").textContent = "@" + (s.handle || "fluxer");
-  el("version").textContent = "v" + (s.version || "1.0.4");
+  el("version").textContent = "v" + (s.version || "1.0.6");
   el("user-id").textContent = String(s.user_id ?? "-");
   el("api-url").textContent = s.api_url || "-";
   if (el("prefix-display")) el("prefix-display").textContent = s.prefix || "!";
@@ -290,68 +295,230 @@ function setupControls() {
   bindToggle("toggle-verbose", "verbose");
 }
 
+function hubEditorSnapshot() {
+  return JSON.stringify({
+    id: activeScriptId,
+    name: el("script-name")?.value || "",
+    author: el("script-author")?.value || "",
+    description: el("script-description")?.value || "",
+    usage: el("script-usage")?.value || "",
+    command: el("script-command")?.value || "",
+    submitted_by: el("script-submitted-by")?.value || "",
+    enabled: el("script-enabled")?.checked,
+    code: el("script-code")?.value || "",
+  });
+}
+
+function markHubSaved() {
+  hubSavedSnapshot = hubEditorSnapshot();
+  hubDirty = false;
+  el("hub-unsaved")?.classList.add("hidden");
+}
+
+function markHubDirty() {
+  if (hubEditorSnapshot() === hubSavedSnapshot) return;
+  hubDirty = true;
+  el("hub-unsaved")?.classList.remove("hidden");
+}
+
 function setScriptStatus(msg, isError) {
   const node = el("script-status");
   if (!node) return;
   node.textContent = msg || "";
-  node.style.color = isError ? "var(--error)" : "";
+  node.classList.remove("ok", "err");
+  if (!msg) return;
+  node.classList.add(isError ? "err" : "ok");
+}
+
+function syncHubLineNumbers() {
+  const code = el("script-code");
+  const nums = el("hub-line-nums");
+  if (!code || !nums) return;
+  const lines = Math.max(1, (code.value.match(/\n/g) || []).length + 1);
+  nums.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
+  const meta = el("hub-code-meta");
+  if (meta) meta.textContent = `${lines} line${lines === 1 ? "" : "s"}`;
+}
+
+function updateHubEditorChrome(script) {
+  const title = el("hub-editor-title");
+  const cmdBadge = el("hub-editor-cmd");
+  const name = (script?.name || script?.command || "").trim();
+  if (title) {
+    title.textContent = name || (activeScriptId ? "Untitled script" : "Select a script");
+  }
+  if (cmdBadge) {
+    const cmd = (script?.command || el("script-command")?.value || "").trim();
+    cmdBadge.textContent = cmd ? `!${cmd}` : "";
+  }
+  syncHubLineNumbers();
 }
 
 function loadScriptIntoEditor(script) {
   activeScriptId = script?.id || "";
   el("script-name").value = script?.name || "";
-  el("script-author").value = script?.author || "Flx";
+  el("script-author").value =
+    script?.author || (hubTab === "community" ? "c00lkiddtech" : "Flx");
   el("script-description").value = script?.description || script?.help || "";
-  el("script-usage").value = script?.usage || (script?.command ? "<p>" + script.command + " <args>" : "");
+  el("script-usage").value =
+    script?.usage || (script?.command ? "<p>" + script.command + " <args>" : "");
   el("script-command").value = script?.command || "";
   el("script-enabled").checked = script?.enabled !== false;
+  if (el("script-submitted-by")) {
+    el("script-submitted-by").value = script?.submitted_by || "";
+  }
   el("script-code").value = script?.code || "";
   el("script-test-out").textContent = "";
   setScriptStatus("");
+  markHubSaved();
+  updateHubEditorChrome(script);
   document.querySelectorAll("#hub-script-list button").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.id === activeScriptId);
   });
 }
 
+function filteredHubScripts(scripts) {
+  const q = hubSearchQuery.trim().toLowerCase();
+  if (!q) return scripts;
+  return scripts.filter((s) => {
+    const hay = [
+      s.name,
+      s.command,
+      s.author,
+      s.description,
+      s.help,
+      s.submitted_by,
+      ...(s.commands || []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function currentHubList() {
+  return hubTab === "community" ? communityScripts : hubScripts;
+}
+
 function renderHubList() {
   const list = el("hub-script-list");
+  const countNode = el("hub-list-count");
   if (!list) return;
-  if (!hubScripts.length) {
-    list.innerHTML =
-      '<li class="muted" style="padding:8px">No scripts yet. Click New script.</li>';
+  const all = currentHubList();
+  const scripts = filteredHubScripts(all);
+  if (countNode) countNode.textContent = String(all.length);
+
+  const emptyMine = "No scripts yet. Click New script.";
+  const emptyCommunity = "No community scripts yet.";
+  const emptySearch = "No scripts match your search.";
+
+  if (!all.length) {
+    list.innerHTML = `<li class="muted hub-empty">${hubTab === "community" ? emptyCommunity : emptyMine}</li>`;
     return;
   }
-  list.innerHTML = hubScripts
-    .map(
-      (s) =>
-        `<li><button type="button" data-id="${escapeHtml(s.id)}" class="${s.id === activeScriptId ? "active" : ""}">
-          <span class="hub-item-name">${escapeHtml(s.name || s.command)}${s.enabled ? "" : " (off)"}</span>
+  if (!scripts.length) {
+    list.innerHTML = `<li class="muted hub-empty">${emptySearch}</li>`;
+    return;
+  }
+
+  list.innerHTML = scripts
+    .map((s) => {
+      const cmd = s.command || (s.commands && s.commands[0]) || "";
+      const cmdClass = hubTab === "mine" && !s.enabled ? "hub-item-cmd off" : "hub-item-cmd";
+      const authorLine =
+        hubTab === "community" && s.author
+          ? `<span class="hub-item-sub">by ${escapeHtml(s.author)}</span>`
+          : "";
+      return `<li><button type="button" data-id="${escapeHtml(s.id)}" class="${s.id === activeScriptId ? "active" : ""}">
+          <span class="hub-item-row">
+            <span class="hub-item-name">${escapeHtml(s.name || cmd || "Script")}</span>
+            ${cmd ? `<span class="${cmdClass}">!${escapeHtml(cmd)}</span>` : ""}
+          </span>
           <span class="hub-item-help">${escapeHtml(s.description || s.help || "")}</span>
-        </button></li>`
-    )
+          ${authorLine}
+        </button></li>`;
+    })
     .join("");
   list.querySelectorAll("button[data-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const script = hubScripts.find((s) => s.id === btn.dataset.id);
+      const script = all.find((s) => s.id === btn.dataset.id);
       if (script) loadScriptIntoEditor(script);
     });
   });
+}
+
+function setHubTab(tab) {
+  hubTab = tab === "community" ? "community" : "mine";
+  activeScriptId = "";
+  document.querySelectorAll(".hub-tab").forEach((btn) => {
+    const on = btn.dataset.hubTab === hubTab;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  el("hub-list-title").textContent = hubTab === "community" ? "Community" : "My scripts";
+  el("community-tab-hint")?.classList.toggle("hidden", hubTab !== "community");
+  el("btn-script-new")?.classList.toggle("hidden", hubTab !== "mine");
+  el("btn-community-new")?.classList.toggle("hidden", hubTab !== "community");
+  el("btn-script-save")?.classList.toggle("hidden", hubTab !== "mine");
+  el("btn-community-save")?.classList.toggle("hidden", hubTab !== "community");
+  el("btn-script-delete")?.classList.toggle("hidden", hubTab !== "mine");
+  el("btn-community-delete")?.classList.toggle("hidden", hubTab !== "community");
+  el("btn-community-import")?.classList.toggle("hidden", hubTab !== "community");
+  el("script-submitted-wrap")?.classList.toggle("hidden", hubTab !== "community");
+  el("hub-enable-wrap")?.classList.toggle("hidden", hubTab === "community");
+  renderHubList();
+  const scripts = currentHubList();
+  if (scripts.length) {
+    loadScriptIntoEditor(scripts[0]);
+  } else {
+      loadScriptIntoEditor({
+        name: "",
+        author: hubTab === "community" ? "c00lkiddtech" : "Flx",
+        command: "",
+        description: "",
+        usage: "",
+        code: "",
+        enabled: true,
+        submitted_by: hubTab === "community" ? "c00lkiddtech" : "",
+      });
+  }
 }
 
 async function refreshScripts() {
   try {
     const data = await api("/api/scripts");
     hubScripts = data.scripts || [];
-    renderHubList();
-    if (activeScriptId) {
-      const current = hubScripts.find((s) => s.id === activeScriptId);
-      if (current) loadScriptIntoEditor(current);
-    } else if (hubScripts.length) {
-      loadScriptIntoEditor(hubScripts[0]);
+    if (hubTab === "mine") {
+      renderHubList();
+      if (activeScriptId) {
+        const current = hubScripts.find((s) => s.id === activeScriptId);
+        if (current) loadScriptIntoEditor(current);
+      } else if (hubScripts.length) {
+        loadScriptIntoEditor(hubScripts[0]);
+      }
     }
     await refreshStatus();
   } catch (_) {
     setScriptStatus("Could not load Script Hub.", true);
+  }
+}
+
+async function refreshCommunityScripts() {
+  try {
+    const data = await api("/api/community/scripts");
+    communityScripts = data.scripts || [];
+    if (hubTab === "community") {
+      renderHubList();
+      if (activeScriptId) {
+        const current = communityScripts.find((s) => s.id === activeScriptId);
+        if (current) loadScriptIntoEditor(current);
+      } else if (communityScripts.length) {
+        loadScriptIntoEditor(communityScripts[0]);
+      }
+    }
+  } catch (_) {
+    setScriptStatus("Could not load community scripts.", true);
   }
 }
 
@@ -365,7 +532,78 @@ async function postScript(body) {
   return data;
 }
 
+async function postCommunity(body) {
+  const data = await api("/api/community/scripts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!data.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function setupHubEditorInputs() {
+  const watchIds = [
+    "script-name",
+    "script-author",
+    "script-description",
+    "script-usage",
+    "script-command",
+    "script-submitted-by",
+    "script-code",
+  ];
+  watchIds.forEach((id) => {
+    const node = el(id);
+    if (!node) return;
+    node.addEventListener("input", () => {
+      markHubDirty();
+      updateHubEditorChrome({
+        name: el("script-name")?.value,
+        command: el("script-command")?.value,
+      });
+      if (id === "script-code") syncHubLineNumbers();
+    });
+  });
+
+  el("script-enabled")?.addEventListener("change", () => markHubDirty());
+
+  const code = el("script-code");
+  const nums = el("hub-line-nums");
+  if (code && nums) {
+    code.addEventListener("scroll", () => {
+      nums.scrollTop = code.scrollTop;
+    });
+  }
+
+  el("hub-search")?.addEventListener("input", (e) => {
+    hubSearchQuery = e.target.value;
+    renderHubList();
+  });
+}
+
 function setupScriptHub() {
+  setupHubEditorInputs();
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+      const page = document.querySelector("#page-scripts.active");
+      if (!page) return;
+      e.preventDefault();
+      if (hubTab === "community") el("btn-community-save")?.click();
+      else el("btn-script-save")?.click();
+    }
+  });
+
+  document.querySelectorAll(".hub-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.hubTab;
+      if (tab === hubTab) return;
+      setHubTab(tab);
+      if (tab === "community") refreshCommunityScripts();
+      else refreshScripts();
+    });
+  });
+
   el("btn-script-new")?.addEventListener("click", async () => {
     try {
       const tpl = await api("/api/scripts/template?name=My+Script");
@@ -393,6 +631,7 @@ function setupScriptHub() {
         enabled: el("script-enabled").checked,
       });
       activeScriptId = data.script?.id || activeScriptId;
+      markHubSaved();
       setScriptStatus("Saved to Script Hub.");
       await refreshScripts();
     } catch (err) {
@@ -403,18 +642,97 @@ function setupScriptHub() {
   el("btn-script-test")?.addEventListener("click", async () => {
     el("script-test-out").textContent = "…";
     try {
-      const data = await postScript({
+      const payload = {
         action: "test",
-        id: activeScriptId || undefined,
         command: el("script-command").value,
         code: el("script-code").value,
         args: el("script-test-args").value,
-      });
+      };
+      if (hubTab === "mine") payload.id = activeScriptId || undefined;
+      const data =
+        hubTab === "community" ? await postCommunity(payload) : await postScript(payload);
       const r = data.result;
       el("script-test-out").textContent = Array.isArray(r) ? r.join(" | ") : String(r);
       setScriptStatus("");
     } catch (err) {
       el("script-test-out").textContent = "";
+      setScriptStatus(err.message || String(err), true);
+    }
+  });
+
+  el("btn-community-new")?.addEventListener("click", async () => {
+    try {
+      const tpl = await api(
+        "/api/scripts/template?name=Community+Script&author=c00lkiddtech&command=communitycmd"
+      );
+      activeScriptId = "";
+      loadScriptIntoEditor({ ...tpl, submitted_by: "" });
+      renderHubList();
+      setScriptStatus("New community script - edit and publish.");
+    } catch (_) {
+      setScriptStatus("Could not load template.", true);
+    }
+  });
+
+  el("btn-community-save")?.addEventListener("click", async () => {
+    try {
+      const data = await postCommunity({
+        action: "save",
+        id: activeScriptId || undefined,
+        name: el("script-name").value,
+        author: el("script-author").value,
+        description: el("script-description").value,
+        usage: el("script-usage").value,
+        command: el("script-command").value,
+        help: el("script-description").value,
+        code: el("script-code").value,
+        submitted_by: el("script-submitted-by")?.value || "",
+      });
+      activeScriptId = data.script?.id || activeScriptId;
+      markHubSaved();
+      setScriptStatus("Published to community.");
+      await refreshCommunityScripts();
+    } catch (err) {
+      setScriptStatus(err.message || String(err), true);
+    }
+  });
+
+  el("btn-community-import")?.addEventListener("click", async () => {
+    if (!activeScriptId) {
+      setScriptStatus("Pick a community script first.", true);
+      return;
+    }
+    try {
+      await postCommunity({ action: "import", id: activeScriptId });
+      setScriptStatus("Added to your Script Hub.");
+      await refreshScripts();
+      setHubTab("mine");
+    } catch (err) {
+      setScriptStatus(err.message || String(err), true);
+    }
+  });
+
+  el("btn-community-delete")?.addEventListener("click", async () => {
+    if (!activeScriptId) {
+      setScriptStatus("Pick a script to remove.", true);
+      return;
+    }
+    if (!confirm("Remove this script from the community hub?")) return;
+    try {
+      await postCommunity({ action: "delete", id: activeScriptId });
+      activeScriptId = "";
+      loadScriptIntoEditor({
+        name: "",
+        author: "c00lkiddtech",
+        command: "",
+        description: "",
+        usage: "",
+        code: "",
+        submitted_by: "",
+      });
+      setScriptStatus("Removed from community.");
+      await refreshCommunityScripts();
+    } catch (err) {
       setScriptStatus(err.message || String(err), true);
     }
   });
@@ -445,7 +763,7 @@ function setupScriptHub() {
   });
 
   el("script-enabled")?.addEventListener("change", async () => {
-    if (!activeScriptId) return;
+    if (!activeScriptId || hubTab !== "mine") return;
     try {
       await postScript({
         action: "toggle",
@@ -457,6 +775,8 @@ function setupScriptHub() {
       setScriptStatus(err.message || String(err), true);
     }
   });
+
+  setHubTab("mine");
 }
 
 setupNav();
@@ -464,5 +784,6 @@ setupControls();
 setupScriptHub();
 refreshStatus();
 refreshScripts();
+refreshCommunityScripts();
 setInterval(refreshStatus, 2000);
 setInterval(pollEvents, 800);

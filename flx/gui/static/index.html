@@ -74,7 +74,7 @@
           </div>
 
           <footer class="bottom-bar glass">
-            <span class="version" id="version">v1.0.4</span>
+            <span class="version" id="version">v1.0.6</span>
             <span class="sep">·</span>
             <span>Prefix <code id="prefix-display">!</code></span>
             <span class="sep">·</span>
@@ -104,44 +104,114 @@
           <header class="hub-header">
             <div>
               <h2>Script Hub</h2>
-              <p class="muted">Nighty-style FlxScript for <a href="https://fluxer.app" target="_blank" rel="noopener">fluxer.app</a>. Guide: <code>docs/FLXSCRIPT_GUIDE.md</code></p>
+              <p class="muted">FlxScript for <a href="https://fluxer.app" target="_blank" rel="noopener">fluxer.app</a>. Guide: <code>docs/FLXSCRIPT_GUIDE.md</code> - use <strong>Community</strong> for shared scripts.</p>
             </div>
-            <button type="button" class="btn primary" id="btn-script-new">New script</button>
+            <div class="hub-header-actions">
+              <button type="button" class="btn primary" id="btn-script-new">New script</button>
+              <button type="button" class="btn primary hidden" id="btn-community-new">New community script</button>
+            </div>
           </header>
+          <div class="hub-tabs" role="tablist">
+            <button type="button" class="hub-tab active" data-hub-tab="mine" role="tab" aria-selected="true">My scripts</button>
+            <button type="button" class="hub-tab" data-hub-tab="community" role="tab" aria-selected="false">Community</button>
+          </div>
+          <p class="hub-tab-hint muted hidden" id="community-tab-hint">Community scripts by <strong>c00lkiddtech</strong> and others. Click <strong>Add to Script Hub</strong> to install.</p>
           <div class="hub-layout">
-            <aside class="hub-list glass">
-              <h3>Script hub</h3>
+            <aside class="hub-sidebar glass">
+              <div class="hub-sidebar-head">
+                <h3 id="hub-list-title">My scripts</h3>
+                <span class="hub-count muted" id="hub-list-count">0</span>
+              </div>
+              <div class="hub-search-wrap">
+                <input type="search" id="hub-search" class="hub-search" placeholder="Search scripts…" autocomplete="off" />
+              </div>
               <ul id="hub-script-list" class="hub-items"></ul>
             </aside>
-            <div class="hub-editor glass">
-              <div class="hub-form-row hub-meta-row">
-                <label>Script name <input type="text" id="script-name" placeholder="My Script" autocomplete="off" /></label>
-                <label>Author <input type="text" id="script-author" placeholder="Flx" autocomplete="off" /></label>
+            <div class="hub-workspace">
+              <div class="hub-editor glass">
+                <header class="hub-editor-top">
+                  <div class="hub-editor-title-wrap">
+                    <h3 class="hub-editor-title" id="hub-editor-title">Select a script</h3>
+                    <span class="hub-editor-cmd" id="hub-editor-cmd"></span>
+                    <span class="hub-unsaved hidden" id="hub-unsaved">Unsaved</span>
+                  </div>
+                  <label class="toggle-row hub-enable-top" id="hub-enable-wrap">
+                    <span>Enabled</span>
+                    <input type="checkbox" id="script-enabled" checked />
+                    <span class="toggle"></span>
+                  </label>
+                </header>
+
+                <div class="hub-panels">
+                  <section class="hub-panel hub-panel-details">
+                    <h4 class="hub-panel-label">Details</h4>
+                    <div class="hub-fields-grid">
+                      <label class="hub-field hub-field-wide">
+                        <span>Script name</span>
+                        <input type="text" id="script-name" placeholder="My Script" autocomplete="off" />
+                      </label>
+                      <label class="hub-field">
+                        <span>Author</span>
+                        <input type="text" id="script-author" placeholder="Your name" autocomplete="off" />
+                      </label>
+                      <label class="hub-field hub-field-cmd">
+                        <span>Command</span>
+                        <div class="hub-cmd-input-wrap">
+                          <span class="hub-cmd-prefix">!</span>
+                          <input type="text" id="script-command" placeholder="mycommand" autocomplete="off" />
+                        </div>
+                      </label>
+                      <label class="hub-field hub-field-wide hidden" id="script-submitted-wrap">
+                        <span>Submitted by</span>
+                        <input type="text" id="script-submitted-by" placeholder="@user" autocomplete="off" />
+                      </label>
+                      <label class="hub-field hub-field-wide">
+                        <span>Description</span>
+                        <input type="text" id="script-description" placeholder="What this script does" autocomplete="off" />
+                      </label>
+                      <label class="hub-field hub-field-wide">
+                        <span>Usage</span>
+                        <input type="text" id="script-usage" placeholder="&lt;p&gt;mycommand &lt;args&gt;" autocomplete="off" />
+                      </label>
+                    </div>
+                  </section>
+
+                  <section class="hub-panel hub-panel-code">
+                    <div class="hub-panel-head">
+                      <h4 class="hub-panel-label">Python</h4>
+                      <span class="hub-code-meta muted" id="hub-code-meta">0 lines</span>
+                    </div>
+                    <p class="hub-code-hint muted">Use <code>@flxScript</code>, <code>@bot.command</code>, then call your entry function at the end.</p>
+                    <div class="hub-code-wrap">
+                      <pre class="hub-line-nums" id="hub-line-nums" aria-hidden="true">1</pre>
+                      <textarea id="script-code" class="hub-code" spellcheck="false" wrap="off"></textarea>
+                    </div>
+                  </section>
+
+                  <section class="hub-panel hub-panel-test">
+                    <h4 class="hub-panel-label">Test run</h4>
+                    <div class="hub-test-bar">
+                      <label class="hub-field hub-field-test">
+                        <span>Args</span>
+                        <input type="text" id="script-test-args" placeholder="hello world" autocomplete="off" />
+                      </label>
+                      <button type="button" class="btn ghost" id="btn-script-test">Run test</button>
+                    </div>
+                    <pre class="hub-test-out" id="script-test-out"></pre>
+                  </section>
+                </div>
+
+                <footer class="hub-editor-footer">
+                  <p class="hub-status" id="script-status"></p>
+                  <div class="hub-actions">
+                    <button type="button" class="btn primary" id="btn-script-save">Save to hub</button>
+                    <button type="button" class="btn primary hidden" id="btn-community-save">Publish to community</button>
+                    <button type="button" class="btn ghost hidden" id="btn-community-import">Add to Script Hub</button>
+                    <button type="button" class="btn ghost danger" id="btn-script-delete">Delete</button>
+                    <button type="button" class="btn ghost danger hidden" id="btn-community-delete">Remove</button>
+                  </div>
+                </footer>
               </div>
-              <div class="hub-form-row">
-                <label>Description <input type="text" id="script-description" placeholder="What this script does" autocomplete="off" /></label>
-                <label>Usage <input type="text" id="script-usage" placeholder="&lt;p&gt;mycommand &lt;args&gt;" autocomplete="off" /></label>
-              </div>
-              <div class="hub-form-row">
-                <label>Primary command <input type="text" id="script-command" placeholder="mycommand" autocomplete="off" /></label>
-                <label class="toggle-row hub-enable">
-                  <span>Enabled</span>
-                  <input type="checkbox" id="script-enabled" checked />
-                  <span class="toggle"></span>
-                </label>
-              </div>
-              <label class="hub-code-label">Python <span class="muted">- <code>@flxScript</code> / <code>@nightyScript</code>, <code>@bot.command</code>, call entry at end</span></label>
-              <textarea id="script-code" class="hub-code" spellcheck="false"></textarea>
-              <div class="hub-test-row">
-                <label>Test args <input type="text" id="script-test-args" placeholder="hello world" autocomplete="off" /></label>
-                <span class="hub-test-out muted" id="script-test-out"></span>
-              </div>
-              <div class="hub-actions">
-                <button type="button" class="btn primary" id="btn-script-save">Save to hub</button>
-                <button type="button" class="btn ghost" id="btn-script-test">Test</button>
-                <button type="button" class="btn ghost danger" id="btn-script-delete">Delete</button>
-              </div>
-              <p class="hub-status muted" id="script-status"></p>
             </div>
           </div>
         </section>

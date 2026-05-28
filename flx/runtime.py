@@ -258,13 +258,17 @@ class BotRuntime:
             files = list(builtin.files)
             script_delete = ctx._delete_invocation
         else:
-            hub_result, script_delete = dispatch_hub_command(cmd, args, msg)
-            if hub_result is None:
+            hub_result, script_delete, hub_files = dispatch_hub_command(cmd, args, msg)
+            if hub_result is None and not hub_files:
                 return
-            if isinstance(hub_result, list):
+            if hub_result is None:
+                replies = []
+            elif isinstance(hub_result, list):
                 replies = hub_result
             else:
                 replies = [hub_result]
+            if hub_files:
+                files = list(hub_files)
 
         with self._lock:
             self._commands_used += 1

@@ -20,9 +20,9 @@ Output: `dist\FLX-Windows.zip`
 
 ## GitHub Actions (all platforms)
 
-1. Tag a release: `git tag v1.0.4 && git push origin v1.0.4`
+1. Tag a release: `git tag v1.0.6 && git push origin v1.0.6`
 
-Or: **Actions** -> **Release** -> **Run workflow** -> version `v1.0.4`
+Or: **Actions** -> **Release** -> **Run workflow** -> version `v1.0.6`
 
 CI uploads: `FLX-macOS.zip`, `FLX-Windows.zip`, `FLX-ChromeOS.zip`
 
@@ -41,5 +41,5 @@ The webhook URL is also saved locally at `~/Library/Application Support/Flx/rele
 Upload a Windows zip to an existing release:
 
 ```bash
-gh release upload v1.0.4 dist/FLX-Windows.zip
+gh release upload v1.0.6 dist/FLX-Windows.zip
 ```

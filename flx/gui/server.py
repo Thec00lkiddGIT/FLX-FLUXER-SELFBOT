@@ -13,6 +13,13 @@ from flx.danger_cmds import DANGER_COMMANDS
 from flx.gui.commands_list import COMMANDS
 from flx.paths import app_support_dir, ensure_env_file, open_env_in_editor
 from flx.runtime import get_runtime
+from flx.community_hub import (
+    community_script_dict,
+    delete_community_script,
+    import_community_to_hub,
+    list_community_scripts,
+    save_community_script,
+)
 from flx.script_hub import (
     delete_script,
     list_scripts,
@@ -38,7 +45,7 @@ def _json_response(handler: BaseHTTPRequestHandler, code: int, payload: object) 
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "FLX/1.0.4"
+    server_version = "FLX/1.0.6"
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -87,6 +94,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 item = s.to_dict()
                 item["code"] = read_script_code(s.id)
                 scripts.append(item)
+            _json_response(self, 200, {"scripts": scripts})
+            return
+
+        if path == "/api/community/scripts":
+            scripts = [community_script_dict(s) for s in list_community_scripts()]
             _json_response(self, 200, {"scripts": scripts})
             return
 
@@ -184,6 +196,62 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         result = test_script_code(str(code), command, args)
                     else:
                         result = run_script(script_id, args)
+                except Exception as exc:  # noqa: BLE001
+                    _json_response(self, 400, {"ok": False, "error": str(exc)})
+                    return
+                _json_response(self, 200, {"ok": True, "result": result})
+                return
+            _json_response(self, 400, {"ok": False, "error": "unknown action"})
+            return
+
+        if path == "/api/community/scripts":
+            action = data.get("action", "save")
+            if action == "save":
+                script, err = save_community_script(
+                    script_id=data.get("id") or None,
+                    name=str(data.get("name", "")),
+                    author=str(data.get("author", "Flx")),
+                    description=str(data.get("description", "") or data.get("help", "")),
+                    usage=str(data.get("usage", "")),
+                    command=str(data.get("command", "")),
+                    help_text=str(data.get("help", "")),
+                    code=str(data.get("code", "")),
+                    submitted_by=str(data.get("submitted_by", "")),
+                )
+                if err:
+                    _json_response(self, 400, {"ok": False, "error": err})
+                    return
+                _json_response(
+                    self,
+                    200,
+                    {
+                        "ok": True,
+                        "script": community_script_dict(script) if script else None,
+                    },
+                )
+                return
+            if action == "delete":
+                ok = delete_community_script(str(data.get("id", "")))
+                _json_response(self, 200, {"ok": ok})
+                return
+            if action == "import":
+                script, err = import_community_to_hub(str(data.get("id", "")))
+                if err:
+                    _json_response(self, 400, {"ok": False, "error": err})
+                    return
+                _json_response(
+                    self,
+                    200,
+                    {"ok": True, "script": script.to_dict() if script else None},
+                )
+                return
+            if action == "test":
+                try:
+                    result = test_script_code(
+                        str(data.get("code", "")),
+                        str(data.get("command", "")),
+                        str(data.get("args", "")),
+                    )
                 except Exception as exc:  # noqa: BLE001
                     _json_response(self, 400, {"ok": False, "error": str(exc)})
                     return

@@ -1,4 +1,4 @@
-"""FlxScript API - Nighty-style custom commands for Fluxer."""
+"""FlxScript API - custom commands and listeners for Fluxer."""
 
 from __future__ import annotations
 
@@ -118,13 +118,14 @@ class FlxMessage:
 
 @dataclass
 class CommandContext:
-    """Nighty-style command context (`ctx.send`, `ctx.message`)."""
+    """Command context (`ctx.send`, `ctx.attach`, `ctx.message`)."""
 
     message: FlxMessage
     script_id: str
     command: str
     args: str
     _outgoing: list[str] = field(default_factory=list)
+    _files: list[tuple[str, bytes]] = field(default_factory=list)
     _delete_invocation: bool = False
 
     @property
@@ -134,6 +135,14 @@ class CommandContext:
     def send(self, content: str) -> None:
         if content:
             self._outgoing.append(content)
+
+    def attach(self, filename: str, data: bytes) -> None:
+        if filename and data:
+            self._files.append((filename, data))
+
+    @property
+    def files(self) -> list[tuple[str, bytes]]:
+        return list(self._files)
 
     def reply_embed(
         self,
@@ -227,10 +236,6 @@ def flxScript(
         return fn
 
     return decorator
-
-
-# Nighty-compatible alias
-nightyScript = flxScript
 
 
 def set_script_context(script_id: str | None) -> None:

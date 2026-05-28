@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 
+from flx.community_hub import ensure_community_hub
 from flx.paths import ensure_env_file, ensure_script_hub
 from flx.runtime import get_runtime
 from flx.state import load_gui_settings
@@ -12,6 +13,7 @@ from flx.state import load_gui_settings
 def prepare_runtime(*, autostart: bool | None = None) -> None:
     ensure_env_file()
     ensure_script_hub()
+    ensure_community_hub()
     settings = load_gui_settings()
     rt = get_runtime()
     rt.update_settings(

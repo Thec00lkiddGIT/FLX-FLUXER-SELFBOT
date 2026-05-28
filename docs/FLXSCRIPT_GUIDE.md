@@ -1,6 +1,6 @@
 # FlxScript Guide v1.0
 
-*Nighty-style custom Python for [Fluxer](https://fluxer.app) selfbots.*
+*Custom Python commands for [Fluxer](https://fluxer.app) selfbots.*
 
 ## 1. Overview
 
@@ -43,8 +43,6 @@ script_function()  # REQUIRED - registers commands
 | `author` | Your name |
 | `description` | Short summary |
 | `usage` | `<p>` = your prefix from config (`!` by default). `[optional]`, `--flags` |
-
-**Aliases:** `@flxScript` and `@nightyScript` are the same decorator.
 
 ## 2.1 Documentation standards
 
@@ -184,16 +182,15 @@ def greeter():
 greeter()
 ```
 
-## 7. Differences from Nighty
+## 7. Attachments
 
-| Nighty | Flx |
-|--------|-----|
-| `await ctx.message.delete()` | Dashboard toggle or `ctx.request_delete_invocation()` |
-| `await ctx.send()` | `ctx.send()` (sync) |
-| Discord channels/guilds | Fluxer channels/guilds (same IDs in API) |
-| `nightyScript` | `flxScript` or `nightyScript` (alias) |
+Use `ctx.attach(filename, bytes)` after `ctx.send()` for images or files (for example `httpcat` or `pokemon` community scripts).
 
-## 8. Getting your token
+## 8. Community hub
+
+Bundled scripts live under `scripts/community/` in the repo and sync into **Script Hub -> Community** on launch. Users click **Add to Script Hub** to copy a script into their personal hub.
+
+## 9. Getting your token
 
 1. Log in at [web.fluxer.app](https://web.fluxer.app)
 2. DevTools -> Network -> request to `api.fluxer.app`
