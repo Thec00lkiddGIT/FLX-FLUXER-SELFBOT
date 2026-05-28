@@ -1,22 +1,22 @@
 # FLX
 
-Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://web.fluxer.app), with a **web dashboard** and **FlxScript** hub (personal + community scripts).
+Your Fluxer selfbot, with a **dashboard you can actually use** and a **Script Hub** for your own commands (plus community scripts you can grab with one click).
 
-**Current version:** 1.0.8
+**Version:** 1.0.8
 
-## Downloads
+## Get FLX
 
-**Releases:** [github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases](https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases)
+**Downloads:** [github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases](https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases)
 
-| Platform | File |
-|----------|------|
-| **macOS** (Apple Silicon) | `FLX-macOS.zip` -> open `FLX.app` |
-| **Windows** | `FLX-Windows.zip` -> run `FLX.exe` |
-| **ChromeOS / Chromebook / Linux** | `FLX-ChromeOS.zip` -> run `./run-chromebook.sh` |
+| Where you're on | Grab this |
+|-----------------|-----------|
+| **Mac (Apple Silicon)** | `FLX-macOS.zip` — unzip, open `FLX.app` |
+| **Windows** | `FLX-Windows.zip` — unzip, run `FLX.exe` |
+| **Chromebook / Linux** | `FLX-ChromeOS.zip` — run `./run-chromebook.sh` |
 
-**Chromebook:** Turn on Linux (Crostini), unzip, run `./run-chromebook.sh`, open the URL in Chrome. Full guide: [docs/CHROMEBOOK.md](docs/CHROMEBOOK.md)
+**Chromebook:** Turn on Linux (Crostini), unzip, run the script, open the link in Chrome. Step-by-step: [docs/CHROMEBOOK.md](docs/CHROMEBOOK.md)
 
-Build from source:
+**Building it yourself:**
 
 | Platform | Command |
 |----------|---------|
@@ -24,11 +24,11 @@ Build from source:
 | **Windows** | `scripts\build_windows.bat` |
 | **Linux / Chromebook** | `bash scripts/build_linux.sh` |
 
-**Windows note:** WebView2 is required for the native window. Use `python gui.py --web` if the native window fails.
+On Windows, the app window needs WebView2. If the native window acts up, run `python gui.py --web` and use it in your browser.
 
-**Chromebook note:** Use `python gui.py --chromebook` or `./run-chromebook.sh` for the browser dashboard (recommended).
+On Chromebook, `python gui.py --chromebook` or `./run-chromebook.sh` is usually the smoothest.
 
-## Quick start (Python)
+## Run from source (Python)
 
 ```bash
 git clone https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT.git
@@ -39,62 +39,62 @@ pip install -r requirements.txt
 python gui.py
 ```
 
-1. **Settings** -> **Edit config** -> set `FLUXER_TOKEN`
-2. **Dashboard** -> **Start bot**
-3. In Fluxer, send `!ping` (or your `PREFIX`) from your account
+1. Open **Settings** → **Edit config** and paste your `FLUXER_TOKEN`
+2. Hit **Start bot** on the dashboard
+3. In Fluxer, try `!ping` (or whatever you set as `PREFIX`)
 
-Browser UI: `python gui.py --web` -> http://127.0.0.1:8766/
+Prefer a browser tab? `python gui.py --web` → http://127.0.0.1:8766/
 
-## FlxScript
+## Scripts (FlxScript)
 
-Write Python in **Script Hub** using `@flxScript`, `@bot.command`, and `@bot.listen`. The **Community** tab ships starter scripts (`echo`, `httpcat`, `pokemon`, `check`) - open it and click **Add to Script Hub** to install them.
+Write Python in **Script Hub** with `@flxScript` and `@bot.command`. The **Community** tab has starter scripts (`echo`, `httpcat`, `pokemon`, `check`) — open one and click **Add to Script Hub** to make it yours.
 
 Full guide: [docs/FLXSCRIPT_GUIDE.md](docs/FLXSCRIPT_GUIDE.md)
 
-## Built-in commands
+## Commands that ship with FLX
 
-| Command | Description |
-|---------|-------------|
-| `!ping` | Latency check |
+| Command | What it does |
+|---------|----------------|
+| `!ping` | See if the bot's alive |
 | `!help` | List commands |
-| `!status` | Set presence |
+| `!status` | Set your presence |
 | `!purge [n]` | Delete your recent messages |
-| `!poof` | Remove image background (reply with image; needs `POOF_API_KEY`) |
-| `!screenshot <url>` | Screenshot a URL (Microlink) |
+| `!poof` | Remove image background (reply with an image; needs `POOF_API_KEY`) |
+| `!screenshot <url>` | Screenshot a link (Microlink) |
 | `!info user` | Profile, avatar, snowflake decode |
-| `!wb <url> send\|delete` | Webhook send or delete via URL |
+| `!wb <url> send\|delete` | Send or delete via a webhook URL |
 
-Outgoing messages wait and retry on channel slowmode / rate limits automatically.
+FLX waits and retries when Fluxer rate-limits you or a channel is on slowmode.
 
-Abuse / mod / troll commands require enabling **abuse mode** in the GUI (`!abuse`).
+The spicy abuse / mod / troll stuff stays locked until you turn on **abuse mode** in the app (`!abuse`).
 
-## Config
+## Config file
 
-| OS | Config file |
-|----|-------------|
+| OS | Where it lives |
+|----|----------------|
 | macOS | `~/Library/Application Support/Flx/config.env` |
 | Windows | `%APPDATA%\Flx\config.env` |
 | Linux / Chromebook | `~/.config/Flx/config.env` |
 
 | Variable | Default |
 |----------|---------|
-| `FLUXER_TOKEN` | (required) |
+| `FLUXER_TOKEN` | (you need this) |
 | `FLUXER_API_URL` | `https://api.fluxer.app` |
 | `PREFIX` | `!` |
-| `POOF_API_KEY` | (optional, for `!poof`) |
+| `POOF_API_KEY` | optional, for `!poof` |
 
-## Project layout
+## What's in the repo
 
 ```
-gui.py              # Launch native / web UI
-flx/                # Bot core, GUI, FlxScript
-scripts/hub/        # Bundled example scripts
-scripts/build_*.sh  # macOS / Windows packagers
-build/flx.spec      # PyInstaller spec
+gui.py              # Start the app (native or browser)
+flx/                # Bot, dashboard, FlxScript
+scripts/hub/        # Empty personal hub template
+scripts/community/  # Bundled community scripts
+build/flx.spec      # PyInstaller build
 docs/FLXSCRIPT_GUIDE.md
 ```
 
 ## Links
 
 - [Fluxer](https://fluxer.app)
-- [API docs](https://fluxerapp-fluxer.mintlify.app/)
+- [Fluxer API docs](https://fluxerapp-fluxer.mintlify.app/)

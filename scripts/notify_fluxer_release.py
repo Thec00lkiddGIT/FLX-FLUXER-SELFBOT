@@ -50,7 +50,7 @@ def _build_payload() -> dict:
         description += f"\n\n{excerpt}"
 
     embed = {
-        "title": f"New FLX release: {tag}",
+        "title": f"FLX {tag} is out",
         "description": description[:4096],
         "color": 0x3B82F6,
         "url": url or None,
@@ -58,10 +58,10 @@ def _build_payload() -> dict:
     }
     if url:
         embed["fields"].append(
-            {"name": "Downloads", "value": f"[GitHub Releases]({url})", "inline": False}
+            {"name": "Grab it", "value": f"[Download on GitHub]({url})", "inline": False}
         )
     if repo:
-        embed["fields"].append({"name": "Repo", "value": f"`{repo}`", "inline": True})
+        embed["fields"].append({"name": "Source", "value": f"`{repo}`", "inline": True})
 
     payload: dict = {
         "username": os.environ.get("WEBHOOK_USERNAME", "updates"),
@@ -71,7 +71,7 @@ def _build_payload() -> dict:
     if content:
         payload["content"] = content[:2000]
     elif url:
-        payload["content"] = f"New release **{tag}** is live."
+        payload["content"] = f"**{tag}** just dropped — Mac, Windows, and Chromebook builds are on GitHub."
     return payload
 
 

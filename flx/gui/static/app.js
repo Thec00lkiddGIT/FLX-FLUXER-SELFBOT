@@ -110,11 +110,11 @@ function copyText(text) {
 
 function renderTokenCard(s) {
   if (s.token_ok) {
-    return `<div class="perm-card ok"><h4>Fluxer token</h4><p>Token is set and the API accepted it when you last started the bot.</p></div>`;
+    return `<div class="perm-card ok"><h4>Fluxer token</h4><p>You're logged in — FLX checked your token the last time you started the bot.</p></div>`;
   }
   return `<div class="perm-card bad">
     <h4>Fluxer token</h4>
-    <p>Set <code>FLUXER_TOKEN</code> in your config file, then click <strong>Start bot</strong>.</p>
+    <p>Add <code>FLUXER_TOKEN</code> in your config (Settings → Edit config), then hit <strong>Start bot</strong>.</p>
   </div>`;
 }
 
@@ -124,7 +124,7 @@ function renderConfigCard(s) {
   if (!envPath && !support) return "";
   return `<div class="perm-card ok">
     <h4>Config &amp; data</h4>
-    <p>Token, prefix, and Script Hub live in Application Support.</p>
+    <p>Your token, prefix, and scripts all live in this folder.</p>
     <div class="fda-path-row">
       <input type="text" class="fda-path" readonly value="${escapeHtml(envPath)}" aria-label="Config path" />
       <button type="button" class="btn ghost env-open">Edit config</button>
@@ -181,10 +181,10 @@ function applyStatus(s) {
 
   const tokenBadge = el("token-badge");
   if (s.token_ok) {
-    tokenBadge.textContent = "Token OK";
+    tokenBadge.textContent = "Logged in";
     tokenBadge.className = "badge";
   } else {
-    tokenBadge.textContent = "No token";
+    tokenBadge.textContent = "No token yet";
     tokenBadge.className = "badge bad";
   }
 
@@ -198,11 +198,11 @@ function applyStatus(s) {
     let msg = "";
     let kind = "error";
     if (!s.token_ok) {
-      msg = "Add FLUXER_TOKEN in Settings -> Edit config, then Start bot.";
+      msg = "Pop your Fluxer token into Settings → Edit config, then press Start bot.";
     } else if (s.error) {
       msg = s.error;
     } else if (!s.running) {
-      msg = "Bot is stopped. Click Start bot to connect to Fluxer.";
+      msg = "FLX is asleep. Hit Start bot when you're ready to connect.";
       kind = "warn";
     }
     if (msg) {
@@ -434,9 +434,9 @@ function renderHubList() {
   const scripts = filteredHubScripts(all);
   if (countNode) countNode.textContent = String(all.length);
 
-  const emptyMine = "No scripts installed. Use Community -> Add to Script Hub, or New script.";
-  const emptyCommunity = "No community scripts yet.";
-  const emptySearch = "No scripts match your search.";
+  const emptyMine = "Nothing here yet — grab something from Community, or start a new script.";
+  const emptyCommunity = "No community scripts loaded right now.";
+  const emptySearch = "Nothing matched that search.";
 
   if (!all.length) {
     list.innerHTML = `<li class="muted hub-empty">${hubTab === "community" ? emptyCommunity : emptyMine}</li>`;
@@ -523,7 +523,7 @@ async function refreshScripts() {
     }
     await refreshStatus();
   } catch (_) {
-    setScriptStatus("Could not load Script Hub.", true);
+    setScriptStatus("Couldn't load your scripts — try refreshing.", true);
   }
 }
 
@@ -542,7 +542,7 @@ async function refreshCommunityScripts() {
       }
     }
   } catch (_) {
-    setScriptStatus("Could not load community scripts.", true);
+    setScriptStatus("Couldn't load community scripts — try again in a sec.", true);
   }
 }
 
@@ -552,7 +552,7 @@ async function postScript(body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!data.ok) throw new Error(data.error || "Request failed");
+  if (!data.ok) throw new Error(data.error || "Something went wrong — try again.");
   return data;
 }
 
@@ -562,7 +562,7 @@ async function postCommunity(body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!data.ok) throw new Error(data.error || "Request failed");
+  if (!data.ok) throw new Error(data.error || "Something went wrong — try again.");
   return data;
 }
 
@@ -633,9 +633,9 @@ function setupScriptHub() {
       activeScriptId = "";
       loadScriptIntoEditor(tpl);
       renderHubList();
-      setScriptStatus("New script ready - edit and save.");
+      setScriptStatus("Fresh script — edit it, then save.");
     } catch (_) {
-      setScriptStatus("Could not load template.", true);
+      setScriptStatus("Couldn't load the starter template.", true);
     }
   });
 
@@ -655,7 +655,7 @@ function setupScriptHub() {
       });
       activeScriptId = data.script?.id || activeScriptId;
       markHubSaved();
-      setScriptStatus("Saved to Script Hub.");
+      setScriptStatus("Saved!");
       await refreshScripts();
     } catch (err) {
       setScriptStatus(err.message || String(err), true);
@@ -685,12 +685,12 @@ function setupScriptHub() {
 
   el("btn-community-import")?.addEventListener("click", async () => {
     if (!activeScriptId) {
-      setScriptStatus("Pick a community script first.", true);
+      setScriptStatus("Choose a community script from the list first.", true);
       return;
     }
     try {
       await postCommunity({ action: "import", id: activeScriptId });
-      setScriptStatus("Added to your Script Hub.");
+      setScriptStatus("Nice — it's in My scripts now.");
       await refreshScripts();
       setHubTab("mine");
     } catch (err) {
@@ -700,10 +700,10 @@ function setupScriptHub() {
 
   el("btn-script-delete")?.addEventListener("click", async () => {
     if (!activeScriptId) {
-      setScriptStatus("Pick a script to delete.", true);
+      setScriptStatus("Select a script first.", true);
       return;
     }
-    if (!confirm("Delete this script?")) return;
+    if (!confirm("Delete this script for good?")) return;
     try {
       await postScript({ action: "delete", id: activeScriptId });
       activeScriptId = "";
@@ -716,7 +716,7 @@ function setupScriptHub() {
         code: "",
         enabled: true,
       });
-      setScriptStatus("Deleted.");
+      setScriptStatus("Gone.");
       await refreshScripts();
     } catch (err) {
       setScriptStatus(err.message || String(err), true);

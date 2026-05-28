@@ -103,7 +103,7 @@ class BotRuntime:
     def start(self) -> tuple[bool, str]:
         with self._lock:
             if self._settings.running:
-                return True, "Already running"
+                return True, "Already connected"
             self._error = None
             self._settings.running = True
 
@@ -119,7 +119,7 @@ class BotRuntime:
             with self._lock:
                 self._settings.running = False
                 self._error = str(exc)
-            self._push_event("error", "Cannot connect", str(exc))
+            self._push_event("error", "Couldn't connect", str(exc))
             return False, str(exc)
 
         ensure_registry()
@@ -132,7 +132,7 @@ class BotRuntime:
         def on_error(msg: str) -> None:
             with self._lock:
                 self._error = msg
-            self._push_event("error", "Gateway error", msg)
+            self._push_event("error", "Connection trouble", msg)
 
         self._gateway = GatewayWorker(
             token,
@@ -290,7 +290,7 @@ class BotRuntime:
                 )
                 sent_any = True
             except RuntimeError as exc:
-                self._push_event("error", "Send failed", str(exc))
+                self._push_event("error", "Message didn't send", str(exc))
                 break
         if files and not replies:
             try:
@@ -301,14 +301,14 @@ class BotRuntime:
                     files=files,
                 )
             except RuntimeError as exc:
-                self._push_event("error", "Send failed", str(exc))
+                self._push_event("error", "Message didn't send", str(exc))
 
         if will_delete:
             try:
                 rest.delete_message(msg.channel_id, msg.id)
             except RuntimeError as exc:
                 if "UNKNOWN_MESSAGE" not in str(exc):
-                    self._push_event("error", "Delete failed", str(exc))
+                    self._push_event("error", "Couldn't delete that message", str(exc))
 
         self._push_event("success", f"!{cmd}", args[:80] or "(no args)")
 

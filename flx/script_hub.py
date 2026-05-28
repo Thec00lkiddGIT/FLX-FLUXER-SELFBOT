@@ -288,7 +288,7 @@ def hub_command_specs() -> list[dict]:
 def validate_command_name(command: str, *, exclude_id: str | None = None) -> str | None:
     name = command.strip().lower()
     if not COMMAND_RE.match(name):
-        return "Command must be 2-32 chars: lowercase letters, digits, underscore; start with a letter."
+        return "Commands need to be 2–32 characters: lowercase letters, numbers, underscore, and they have to start with a letter."
     if name in BUILTIN_NAMES:
         return f"!{name} is already a built-in command."
     for entry in _load_manifest():
@@ -322,7 +322,7 @@ def _extract_commands_from_code(code: str, script_id: str | None) -> tuple[list[
 
 def validate_code(code: str, *, script_id: str | None = None) -> str | None:
     if not code.strip():
-        return "Script code cannot be empty."
+        return "Paste some code first — the file can't be empty."
     try:
         compile(code, "<script>", "exec")
     except SyntaxError as exc:
@@ -430,7 +430,7 @@ def save_script(
             if err and not script_id:
                 return None, err
     else:
-        return None, "No commands found. Add @bot.command or a legacy run(args) function."
+        return None, "No commands found — add a @bot.command or a run(args) function."
 
     if primary and primary not in commands:
         primary = commands[0]

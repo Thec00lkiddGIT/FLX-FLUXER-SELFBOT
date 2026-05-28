@@ -5,8 +5,8 @@ from __future__ import annotations
 from flx.state import load_gui_settings, save_gui_settings
 
 ABUSE_WARNING = (
-    "Do you want to turn on abuse mode? This is unsafe due to abusing the Fluxer API "
-    "and may lead to account bans. Use at your own risk."
+    "Abuse mode unlocks commands that hammer the Fluxer API — spam, mass actions, that kind of thing. "
+    "It's risky and can get your account banned. Only turn this on if you really mean it."
 )
 
 
@@ -38,8 +38,8 @@ def require_abuse_mode() -> str | None:
     if abuse_mode_enabled():
         return None
     if abuse_pending_confirm():
-        return "Abuse mode is waiting for confirmation in the Flx dashboard."
-    return f"Abuse mode is off. Type `{_prefix()}abuse` and confirm in the GUI first."
+        return "Abuse mode is waiting — confirm it in the FLX app first."
+    return f"Abuse mode is off. Run `{_prefix()}abuse` in Fluxer and confirm in the app."
 
 
 def _prefix() -> str:

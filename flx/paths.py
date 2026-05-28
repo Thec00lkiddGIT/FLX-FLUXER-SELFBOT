@@ -9,14 +9,14 @@ import sys
 from pathlib import Path
 
 APP_NAME = "Flx"
-DEFAULT_ENV = """# Fluxer selfbot config (edit these values)
-# Created automatically on first launch.
+DEFAULT_ENV = """# FLX config — fill in what you need below.
+# This file was created on first launch.
 
 FLUXER_TOKEN=
 FLUXER_API_URL=https://api.fluxer.app
 PREFIX=!
 
-# Optional API keys (only needed for matching commands)
+# Optional keys (only for commands that use them)
 C99_WEATHER_KEY=
 GLSERIES_TOKEN=
 GLSERIES_BASE_URL=https://live.glseries.net/api/v1

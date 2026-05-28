@@ -1,9 +1,9 @@
-# Posts new GitHub releases to the Fluxer #releases webhook ("updates").
+# When someone publishes a release from the GitHub UI, post a friendly note to #releases.
 #
-# Note: Releases created by the Release workflow use GITHUB_TOKEN and do NOT
-# trigger release:published here. Those are notified from release.yml instead.
+# Releases made by the main Release workflow use GITHUB_TOKEN and won't trigger this —
+# those get announced from release.yml instead.
 #
-# Setup: gh secret set FLUXER_RELEASES_WEBHOOK_URL < releases_webhook.url
+# Setup once: gh secret set FLUXER_RELEASES_WEBHOOK_URL < releases_webhook.url
 
 name: Fluxer release notify
 
@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Post release to Fluxer webhook
+      - name: Tell #releases about the new version
         env:
           FLUXER_RELEASES_WEBHOOK_URL: ${{ secrets.FLUXER_RELEASES_WEBHOOK_URL }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}

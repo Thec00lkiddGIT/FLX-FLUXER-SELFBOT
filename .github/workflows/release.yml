@@ -1,5 +1,5 @@
-# Copy this file to .github/workflows/release.yml on GitHub to enable CI builds.
-# Or: gh auth refresh -h github.com -s workflow && git push origin main
+# Builds FLX for Mac, Windows, and Chromebook when you push a v* tag.
+# Also posts to your Fluxer #releases webhook after the GitHub release goes live.
 
 name: Release
 
@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release tag (e.g. v1.0.7)"
+        description: "Tag to ship (e.g. v1.0.8)"
         required: true
-        default: "v1.0.7"
+        default: "v1.0.8"
 
 permissions:
   contents: write
@@ -129,7 +129,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: FLX ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          name: FLX ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }} — new build
           files: |
             artifacts/FLX-macOS/FLX-macOS.zip
             artifacts/FLX-Windows/FLX-Windows.zip
@@ -138,8 +138,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # GITHUB_TOKEN-created releases do not fire release:published for other workflows.
-      - name: Notify Fluxer #releases
+      # Token-created releases don't trigger release:published — we announce here instead.
+      - name: Post to Fluxer #releases
         env:
           FLUXER_RELEASES_WEBHOOK_URL: ${{ secrets.FLUXER_RELEASES_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,7 +147,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${FLUXER_RELEASES_WEBHOOK_URL:-}" ]; then
-            echo "FLUXER_RELEASES_WEBHOOK_URL not set; skip Fluxer notify."
+            echo "No Fluxer webhook secret — skipping #releases post."
             exit 0
           fi
           export RELEASE_NAME=$(gh release view "$RELEASE_TAG" --json name -q .name)

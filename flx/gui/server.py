@@ -207,7 +207,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     return
                 _json_response(self, 200, {"ok": True, "result": result})
                 return
-            _json_response(self, 400, {"ok": False, "error": "unknown action"})
+            _json_response(self, 400, {"ok": False, "error": "That action isn't recognized."})
             return
 
         if path == "/api/community/scripts":
@@ -218,7 +218,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     403,
                     {
                         "ok": False,
-                        "error": "Community scripts are read-only. Install them to My scripts instead.",
+                        "error": "Community scripts are look-only here — use Add to my scripts to install one.",
                     },
                 )
                 return
@@ -273,7 +273,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     return
                 _json_response(self, 200, {"ok": True, "result": result})
                 return
-            _json_response(self, 400, {"ok": False, "error": "unknown action"})
+            _json_response(self, 400, {"ok": False, "error": "That action isn't recognized."})
             return
 
         if path != "/api/control":

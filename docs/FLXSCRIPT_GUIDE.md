@@ -1,10 +1,10 @@
-# FlxScript Guide v1.0
+# FlxScript guide
 
-*Custom Python commands for [Fluxer](https://fluxer.app) selfbots.*
+*Write your own commands for [Fluxer](https://fluxer.app) with FLX.*
 
 ## 1. Overview
 
-**FlxScript** extends **Flx** with your own Python commands and event handlers. Flx connects to `api.fluxer.app` / `gateway.fluxer.app`; scripts focus on what happens when you send a command or when messages arrive.
+**FlxScript** is how you add custom Python commands and listeners. FLX handles talking to Fluxer (`api.fluxer.app` / `gateway.fluxer.app`); your script is just "what should happen when I run `!something` or when a message shows up."
 
 > **IMPORTANT - do not import these:**
 > - `import discord` / `from discord import *`

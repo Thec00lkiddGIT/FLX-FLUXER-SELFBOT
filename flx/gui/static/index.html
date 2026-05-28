@@ -27,7 +27,7 @@
 
       <main class="main">
         <section id="page-dashboard" class="page active">
-          <h1 class="greeting">Hello, <span id="display-name">Flx</span> 👋</h1>
+          <h1 class="greeting">Hey, <span id="display-name">Flx</span> 👋</h1>
           <div class="alert-banner hidden" id="alert-banner" role="status"></div>
 
           <div class="grid">
@@ -66,7 +66,7 @@
             <aside class="notify-panel glass">
               <header class="notify-header">
                 <span>🔔</span>
-                <h3>Notification Center</h3>
+                <h3>What's going on</h3>
                 <span class="rocket">⚡</span>
               </header>
               <div class="notify-list" id="notify-list"></div>
@@ -94,7 +94,7 @@
 
         <section id="page-commands" class="page">
           <h2>Commands</h2>
-          <p class="muted">Send commands on <strong>your</strong> account in Fluxer. Hub scripts show a blue badge.</p>
+          <p class="muted">These run on <strong>your</strong> Fluxer account. Scripts you installed from the Hub have a blue badge.</p>
           <div class="cmd-scroll">
             <ul class="cmd-list" id="cmd-list"></ul>
           </div>
@@ -104,7 +104,7 @@
           <header class="hub-header">
             <div>
               <h2>Script Hub</h2>
-              <p class="muted">FlxScript for <a href="https://fluxer.app" target="_blank" rel="noopener">fluxer.app</a>. Guide: <code>docs/FLXSCRIPT_GUIDE.md</code> - use <strong>Community</strong> for shared scripts.</p>
+              <p class="muted">Write commands in Python for <a href="https://fluxer.app" target="_blank" rel="noopener">Fluxer</a>. Stuck? See <code>docs/FLXSCRIPT_GUIDE.md</code> — or browse <strong>Community</strong> for ready-made scripts.</p>
             </div>
             <div class="hub-header-actions">
               <button type="button" class="btn primary" id="btn-script-new">New script</button>
@@ -114,7 +114,7 @@
             <button type="button" class="hub-tab active" data-hub-tab="mine" role="tab" aria-selected="true">My scripts</button>
             <button type="button" class="hub-tab" data-hub-tab="community" role="tab" aria-selected="false">Community</button>
           </div>
-          <p class="hub-tab-hint muted hidden" id="community-tab-hint">Official scripts by <strong>c00lkiddtech</strong> (read-only). Click <strong>Add to Script Hub</strong> to install. My scripts is for your own edits.</p>
+          <p class="hub-tab-hint muted hidden" id="community-tab-hint">Scripts from <strong>c00lkiddtech</strong> — look, don't edit here. Like one? Hit <strong>Add to Script Hub</strong> and it'll show up under <strong>My scripts</strong> for you to tweak.</p>
           <div class="hub-layout">
             <aside class="hub-sidebar glass">
               <div class="hub-sidebar-head">
@@ -130,9 +130,9 @@
               <div class="hub-editor glass">
                 <header class="hub-editor-top">
                   <div class="hub-editor-title-wrap">
-                    <h3 class="hub-editor-title" id="hub-editor-title">Select a script</h3>
+                    <h3 class="hub-editor-title" id="hub-editor-title">Pick a script</h3>
                     <span class="hub-editor-cmd" id="hub-editor-cmd"></span>
-                    <span class="hub-unsaved hidden" id="hub-unsaved">Unsaved</span>
+                    <span class="hub-unsaved hidden" id="hub-unsaved">You have unsaved changes</span>
                   </div>
                   <label class="toggle-row hub-enable-top" id="hub-enable-wrap">
                     <span>Enabled</span>
@@ -180,7 +180,7 @@
                       <h4 class="hub-panel-label">Python</h4>
                       <span class="hub-code-meta muted" id="hub-code-meta">0 lines</span>
                     </div>
-                    <p class="hub-code-hint muted">Use <code>@flxScript</code>, <code>@bot.command</code>, then call your entry function at the end.</p>
+                    <p class="hub-code-hint muted">Start with <code>@flxScript</code>, add <code>@bot.command</code>, then call your setup function at the bottom so it registers.</p>
                     <div class="hub-code-wrap">
                       <pre class="hub-line-nums" id="hub-line-nums" aria-hidden="true">1</pre>
                       <textarea id="script-code" class="hub-code" spellcheck="false" wrap="off"></textarea>
@@ -203,8 +203,8 @@
                 <footer class="hub-editor-footer">
                   <p class="hub-status" id="script-status"></p>
                   <div class="hub-actions">
-                    <button type="button" class="btn primary" id="btn-script-save">Save to hub</button>
-                    <button type="button" class="btn primary hidden" id="btn-community-import">Add to Script Hub</button>
+                    <button type="button" class="btn primary" id="btn-script-save">Save</button>
+                    <button type="button" class="btn primary hidden" id="btn-community-import">Add to my scripts</button>
                     <button type="button" class="btn ghost danger" id="btn-script-delete">Delete</button>
                   </div>
                 </footer>
@@ -226,8 +226,8 @@
       <h2 id="abuse-modal-title">Abuse mode</h2>
       <p class="modal-body" id="abuse-modal-text"></p>
       <div class="modal-actions">
-        <button type="button" class="btn ghost" id="abuse-cancel">Cancel</button>
-        <button type="button" class="btn danger" id="abuse-confirm">Enable abuse mode</button>
+        <button type="button" class="btn ghost" id="abuse-cancel">Nope</button>
+        <button type="button" class="btn danger" id="abuse-confirm">Yeah, turn it on</button>
       </div>
     </div>
   </div>

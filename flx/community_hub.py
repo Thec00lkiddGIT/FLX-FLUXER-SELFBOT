@@ -164,7 +164,7 @@ def save_community_script(
     submitted_by: str = "",
 ) -> tuple[HubScript | None, str | None]:
     if COMMUNITY_READONLY:
-        return None, "Community scripts are read-only. Use Add to Script Hub to install them locally."
+        return None, "Community scripts can't be edited here — use Add to my scripts instead."
 
     from flx.script_hub import _extract_commands_from_code
 
@@ -236,20 +236,20 @@ def delete_community_script(script_id: str) -> bool:
 def import_community_to_hub(community_id: str) -> tuple[HubScript | None, str | None]:
     raw = next((e for e in _load_manifest() if e.get("id") == community_id), None)
     if raw is None:
-        return None, "Community script not found."
+        return None, "Couldn't find that community script."
 
     script = _hub_script_from_raw(raw)
     if script is None:
-        return None, "Invalid community script entry."
+        return None, "That script entry looks broken — sorry about that."
 
     code = read_community_code(community_id)
     if not code.strip():
-        return None, "Community script file is missing."
+        return None, "The script file is missing on disk."
 
     primary = script.command
     err = validate_command_name(primary)
     if err:
-        return None, f"Cannot add to Script Hub: {err} Pick a different script or edit the command first."
+        return None, f"Can't add this one: {err} Try another script or rename the command."
 
     return save_script(
         script_id=None,

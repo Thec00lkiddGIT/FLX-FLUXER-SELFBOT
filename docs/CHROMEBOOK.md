@@ -1,10 +1,10 @@
 # Chromebook guide
 
-FLX works on Chromebooks in two ways.
+Two ways to use FLX on a Chromebook.
 
-## Option A: Browser only (no Linux) - limited
+## Option A: Browser only (no Linux) — pretty limited
 
-Without the Linux development environment, you cannot run the selfbot locally. Use Fluxer in the browser at [web.fluxer.app](https://web.fluxer.app) for normal chat. FLX needs a machine that can run Python (Chromebook Linux, Mac, Windows, or a PC).
+Without Linux turned on, FLX can't run on the Chromebook itself. You can still chat on [web.fluxer.app](https://web.fluxer.app). For the selfbot, you'll need Linux on the Chromebook, or use a Mac, Windows PC, or phone elsewhere.
 
 ## Option B: Linux on Chromebook (recommended)
 

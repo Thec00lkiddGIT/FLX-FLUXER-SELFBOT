@@ -1,45 +1,57 @@
-# Release builds
+# Shipping a new FLX version
 
-## macOS (local or CI)
+## Build on your machine
+
+**macOS**
 
 ```bash
 bash scripts/build_mac.sh
 ```
 
-Output: `dist/FLX-macOS.zip` (contains `FLX.app`)
+You get `dist/FLX-macOS.zip` with `FLX.app` inside.
 
-## Windows (local or CI)
-
-On a Windows machine:
+**Windows** (on a Windows PC)
 
 ```bat
 scripts\build_windows.bat
 ```
 
-Output: `dist\FLX-Windows.zip`
+You get `dist/FLX-Windows.zip`.
 
-## GitHub Actions (all platforms)
+**DMG (Mac only, optional)**
 
-1. Tag a release: `git tag v1.0.6 && git push origin v1.0.6`
+```bash
+bash scripts/make_mac_dmg.sh
+```
 
-Or: **Actions** -> **Release** -> **Run workflow** -> version `v1.0.6`
+Puts `dist/FLX-<version>-macOS.dmg` in `dist/` — handy for dragging into Applications.
 
-CI uploads: `FLX-macOS.zip`, `FLX-Windows.zip`, `FLX-ChromeOS.zip`
+## Let GitHub Actions do it
 
-## Fluxer #releases webhook (automated)
+Tag and push:
 
-When a GitHub release is **published**, `.github/workflows/fluxer-release-notify.yml` posts to the **updates** webhook in `#releases`.
+```bash
+git tag v1.0.8 && git push origin v1.0.8
+```
 
-**One-time GitHub secret** (after creating the webhook in `#releases`):
+Or: **Actions** → **Release** → **Run workflow** and type the tag (e.g. `v1.0.8`).
+
+CI uploads `FLX-macOS.zip`, `FLX-Windows.zip`, and `FLX-ChromeOS.zip`, creates the GitHub release, and posts to your Fluxer `#releases` webhook (if the secret is set).
+
+## Fluxer `#releases` webhook
+
+When a release goes live, the workflow posts to your **updates** webhook in `#releases`.
+
+**One-time setup:**
 
 ```bash
 gh secret set FLUXER_RELEASES_WEBHOOK_URL < "$HOME/Library/Application Support/Flx/releases_webhook.url"
 ```
 
-The webhook URL is also saved locally at `~/Library/Application Support/Flx/releases_webhook.url` when you run the setup script (do not commit this file).
+That URL is saved locally when you set up the channel — don't commit it.
 
-Upload a Windows zip to an existing release:
+**Add a Windows zip to an existing release:**
 
 ```bash
-gh release upload v1.0.6 dist/FLX-Windows.zip
+gh release upload v1.0.8 dist/FLX-Windows.zip
 ```
