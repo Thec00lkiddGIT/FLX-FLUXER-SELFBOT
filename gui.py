@@ -36,7 +36,19 @@ def _reexec_with_project_venv() -> None:
 _reexec_with_project_venv()
 
 
-def _run_web(host: str, port: int) -> int:
+def _is_chromeos_linux() -> bool:
+    """True when running in ChromeOS Crostini (Linux on Chromebook)."""
+    if sys.platform != "linux":
+        return False
+    if os.environ.get("CROS_USER_ID_DIR"):
+        return True
+    try:
+        return "chromebook" in Path("/etc/os-release").read_text().lower()
+    except OSError:
+        return False
+
+
+def _run_web(host: str, port: int, *, chromebook: bool = False) -> int:
     import webbrowser
 
     from flx.gui.bootstrap import prepare_runtime
@@ -45,9 +57,15 @@ def _run_web(host: str, port: int) -> int:
 
     server = run_server(host, port)
     url = f"http://{host}:{port}/"
-    print(f"FLX FLUXER SELFBOT web UI: {url}", flush=True)
+    if chromebook or _is_chromeos_linux():
+        print("Chromebook mode: open this URL in Chrome:", url, flush=True)
+    else:
+        print(f"FLX FLUXER SELFBOT web UI: {url}", flush=True)
     prepare_runtime()
-    webbrowser.open(url)
+    try:
+        webbrowser.open(url)
+    except OSError:
+        print("Open the URL above in your browser.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -58,13 +76,18 @@ def _run_web(host: str, port: int) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="FLX FLUXER SELFBOT")
-    parser.add_argument("--web", action="store_true", help="Open in browser")
+    parser.add_argument("--web", action="store_true", help="Open dashboard in browser")
+    parser.add_argument(
+        "--chromebook",
+        action="store_true",
+        help="Chromebook mode: browser UI (best on ChromeOS Linux)",
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
 
-    if args.web:
-        return _run_web(args.host, args.port)
+    if args.web or args.chromebook:
+        return _run_web(args.host, args.port, chromebook=args.chromebook)
 
     from flx.gui.native_window import run_native_app
 

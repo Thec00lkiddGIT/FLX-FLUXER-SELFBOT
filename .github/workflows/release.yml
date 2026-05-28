@@ -74,8 +74,49 @@ jobs:
           name: FLX-FLUXER-SELFBOT-Windows
           path: dist/FLX-FLUXER-SELFBOT-Windows.zip
 
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            pkg-config
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt -r requirements-build.txt
+          python scripts/prepare_icons.py
+
+      - name: Build Linux app
+        run: pyinstaller build/flx.spec --clean --noconfirm
+
+      - name: Package Chromebook zip
+        run: |
+          chmod +x dist/FLX-FLUXER-SELFBOT/FLX-FLUXER-SELFBOT
+          cp scripts/run_chromebook.sh dist/FLX-FLUXER-SELFBOT/run-chromebook.sh
+          chmod +x dist/FLX-FLUXER-SELFBOT/run-chromebook.sh
+          cp assets/icon.png dist/FLX-FLUXER-SELFBOT/icon.png
+          cd dist
+          zip -r FLX-FLUXER-SELFBOT-Chromebook-Linux.zip FLX-FLUXER-SELFBOT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FLX-FLUXER-SELFBOT-Chromebook-Linux
+          path: dist/FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
+
   publish:
-    needs: [build-macos, build-windows]
+    needs: [build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -90,6 +131,7 @@ jobs:
           files: |
             artifacts/FLX-FLUXER-SELFBOT-macOS/FLX-FLUXER-SELFBOT-macOS.zip
             artifacts/FLX-FLUXER-SELFBOT-Windows/FLX-FLUXER-SELFBOT-Windows.zip
+            artifacts/FLX-FLUXER-SELFBOT-Chromebook-Linux/FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

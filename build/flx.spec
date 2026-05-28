@@ -1,6 +1,7 @@
 # PyInstaller spec for FLX FLUXER SELFBOT
-# macOS:   pyinstaller build/flx.spec --clean --noconfirm
-# Windows: pyinstaller build\flx.spec --clean --noconfirm
+# macOS:      pyinstaller build/flx.spec --clean --noconfirm
+# Windows:    pyinstaller build\flx.spec --clean --noconfirm
+# Linux/Cros: pyinstaller build/flx.spec --clean --noconfirm
 
 import sys
 from pathlib import Path

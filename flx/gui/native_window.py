@@ -14,6 +14,8 @@ def _webview_gui_backend() -> str | None:
         return "cocoa"
     if sys.platform == "win32":
         return "edgechromium"
+    if sys.platform.startswith("linux"):
+        return "gtk"
     return None
 
 

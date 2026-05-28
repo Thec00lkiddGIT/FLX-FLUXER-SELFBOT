@@ -2,7 +2,7 @@
 
 Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://web.fluxer.app), with an **Ibot-style dashboard** and **Nighty-style FlxScript** hub.
 
-## Downloads (macOS and Windows)
+## Downloads
 
 **Releases:** [github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases](https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases)
 
@@ -10,6 +10,9 @@ Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://w
 |----------|------|
 | **macOS** (Apple Silicon) | `FLX-FLUXER-SELFBOT-macOS.zip` -> open `FLX FLUXER SELFBOT.app` |
 | **Windows** | `FLX-FLUXER-SELFBOT-Windows.zip` -> run `FLX-FLUXER-SELFBOT.exe` |
+| **Chromebook / Linux** | `FLX-FLUXER-SELFBOT-Chromebook-Linux.zip` -> run `./run-chromebook.sh` |
+
+**Chromebook:** Turn on Linux (Crostini), unzip, run `./run-chromebook.sh`, open the URL in Chrome. Full guide: [docs/CHROMEBOOK.md](docs/CHROMEBOOK.md)
 
 Build from source:
 
@@ -17,8 +20,11 @@ Build from source:
 |----------|---------|
 | **macOS** | `bash scripts/build_mac.sh` |
 | **Windows** | `scripts\build_windows.bat` |
+| **Linux / Chromebook** | `bash scripts/build_linux.sh` |
 
-**Windows note:** WebView2 runtime is required for the native window (usually already installed on Windows 10/11). Use `python gui.py --web` if the native window fails.
+**Windows note:** WebView2 is required for the native window. Use `python gui.py --web` if the native window fails.
+
+**Chromebook note:** Use `python gui.py --chromebook` or `./run-chromebook.sh` for the browser dashboard (recommended).
 
 ## Quick start (Python)
 
@@ -61,7 +67,7 @@ Abuse / mod / troll commands require enabling **abuse mode** in the GUI (`!abuse
 |----|-------------|
 | macOS | `~/Library/Application Support/Flx/config.env` |
 | Windows | `%APPDATA%\Flx\config.env` |
-| Linux | `~/.config/Flx/config.env` |
+| Linux / Chromebook | `~/.config/Flx/config.env` |
 
 | Variable | Default |
 |----------|---------|
