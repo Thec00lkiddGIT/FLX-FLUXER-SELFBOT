@@ -157,7 +157,7 @@ function applyStatus(s) {
   el("display-name").textContent = name;
   el("profile-name").textContent = name;
   el("profile-handle").textContent = "@" + (s.handle || "fluxer");
-  el("version").textContent = "v" + (s.version || "1.0.8");
+  el("version").textContent = "v" + (s.version || "1.0.9");
   el("user-id").textContent = String(s.user_id ?? "-");
   el("api-url").textContent = s.api_url || "-";
   if (el("prefix-display")) el("prefix-display").textContent = s.prefix || "!";
@@ -473,9 +473,8 @@ function renderHubList() {
   });
 }
 
-function setHubTab(tab) {
+function applyHubTabChrome(tab) {
   hubTab = tab === "community" ? "community" : "mine";
-  activeScriptId = "";
   document.querySelectorAll(".hub-tab").forEach((btn) => {
     const on = btn.dataset.hubTab === hubTab;
     btn.classList.toggle("active", on);
@@ -490,21 +489,48 @@ function setHubTab(tab) {
   el("script-submitted-wrap")?.classList.toggle("hidden", hubTab !== "community");
   el("hub-enable-wrap")?.classList.toggle("hidden", hubTab === "community");
   setCommunityEditorReadonly(hubTab === "community" && communityReadonly);
+}
+
+function upsertHubScript(script) {
+  if (!script?.id) return;
+  const idx = hubScripts.findIndex((s) => s.id === script.id);
+  if (idx >= 0) hubScripts[idx] = script;
+  else hubScripts.push(script);
+}
+
+function showScriptInMine(script) {
+  if (!script) return;
+  upsertHubScript(script);
+  applyHubTabChrome("mine");
+  loadScriptIntoEditor(script);
   renderHubList();
+}
+
+function setHubTab(tab, selectScriptId = null) {
+  applyHubTabChrome(tab);
+  renderHubList();
+  if (selectScriptId) {
+    const picked = hubScripts.find((s) => s.id === selectScriptId);
+    if (picked) {
+      loadScriptIntoEditor(picked);
+      return;
+    }
+  }
+  if (!selectScriptId) activeScriptId = "";
   const scripts = currentHubList();
   if (scripts.length) {
     loadScriptIntoEditor(scripts[0]);
   } else {
-      loadScriptIntoEditor({
-        name: "",
-        author: hubTab === "community" ? "c00lkiddtech" : "Flx",
-        command: "",
-        description: "",
-        usage: "",
-        code: "",
-        enabled: true,
-        submitted_by: hubTab === "community" ? "c00lkiddtech" : "",
-      });
+    loadScriptIntoEditor({
+      name: "",
+      author: hubTab === "community" ? "c00lkiddtech" : "Flx",
+      command: "",
+      description: "",
+      usage: "",
+      code: "",
+      enabled: true,
+      submitted_by: hubTab === "community" ? "c00lkiddtech" : "",
+    });
   }
 }
 
@@ -684,17 +710,31 @@ function setupScriptHub() {
   });
 
   el("btn-community-import")?.addEventListener("click", async () => {
-    if (!activeScriptId) {
+    const communityId = activeScriptId;
+    if (!communityId) {
       setScriptStatus("Choose a community script from the list first.", true);
       return;
     }
+    const btn = el("btn-community-import");
+    if (btn) btn.disabled = true;
     try {
-      await postCommunity({ action: "import", id: activeScriptId });
-      setScriptStatus("Nice — it's in My scripts now.");
-      await refreshScripts();
-      setHubTab("mine");
+      const data = await postCommunity({ action: "import", id: communityId });
+      const imported = data.script;
+      if (!imported?.id) {
+        throw new Error("Import worked but no script came back — weird.");
+      }
+      if (!imported.code) {
+        const fromList = communityScripts.find((s) => s.id === communityId);
+        imported.code = fromList?.code || el("script-code")?.value || "";
+      }
+      showScriptInMine(imported);
+      setScriptStatus("Added to My scripts — you're looking at it now.");
+      refreshScripts().catch(() => {});
+      refreshStatus().catch(() => {});
     } catch (err) {
       setScriptStatus(err.message || String(err), true);
+    } finally {
+      if (btn) btn.disabled = false;
     }
   });
 

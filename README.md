@@ -2,7 +2,7 @@
 
 Your Fluxer selfbot, with a **dashboard you can actually use** and a **Script Hub** for your own commands (plus community scripts you can grab with one click).
 
-**Version:** 1.0.8
+**Version:** 1.0.9
 
 ## Get FLX
 

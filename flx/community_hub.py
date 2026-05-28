@@ -247,12 +247,12 @@ def import_community_to_hub(community_id: str) -> tuple[HubScript | None, str | 
         return None, "The script file is missing on disk."
 
     primary = script.command
-    err = validate_command_name(primary)
+    err = validate_command_name(primary, exclude_id=community_id)
     if err:
         return None, f"Can't add this one: {err} Try another script or rename the command."
 
     return save_script(
-        script_id=None,
+        script_id=community_id,
         name=script.name,
         author=script.author,
         description=script.description,

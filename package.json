@@ -1,6 +1,6 @@
 {
   "name": "flx",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "FLX — a friendly Fluxer selfbot with a dashboard and Script Hub",
   "type": "module",
   "main": "dist/index.js",

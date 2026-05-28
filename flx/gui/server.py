@@ -255,11 +255,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 if err:
                     _json_response(self, 400, {"ok": False, "error": err})
                     return
-                _json_response(
-                    self,
-                    200,
-                    {"ok": True, "script": script.to_dict() if script else None},
-                )
+                payload = None
+                if script:
+                    payload = script.to_dict()
+                    payload["code"] = read_script_code(script.id)
+                _json_response(self, 200, {"ok": True, "script": payload})
                 return
             if action == "test":
                 try:
