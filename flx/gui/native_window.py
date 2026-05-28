@@ -6,7 +6,9 @@ import sys
 import threading
 import time
 
-APP_TITLE = "FLX FLUXER SELFBOT"
+from flx.version import APP_NAME
+
+APP_TITLE = APP_NAME
 
 
 def _webview_gui_backend() -> str | None:

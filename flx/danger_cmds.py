@@ -15,6 +15,7 @@ from flx.abuse_settings import (
 from flx.commands import BuiltinResult
 from flx.fluxerscript import FlxMessage
 from flx.parse_util import mention_user, parse_user_id
+from flx.targets import resolve_target_user_id
 from flx.troll import get_troll_manager
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
 
 DANGER_COMMANDS: list[tuple[str, str]] = [
     ("abuse", "Confirm abuse mode in GUI; `spam <text> <n> <seconds>`"),
-    ("mod", "ban|kick <@user|id> (server only)"),
+    ("mod", "ban|kick <@user|id> (reply works for kick)"),
     ("troll", "ghostping | annoy unreact|delete | reactannoy | stop"),
 ]
 
@@ -34,10 +35,17 @@ def _usage(prefix: str, cmd: str, text: str) -> BuiltinResult:
     return BuiltinResult(replies=[f"Usage: `{prefix}{cmd}` {text}"])
 
 
-def _need_guild(msg: FlxMessage) -> str | None:
-    if not msg.guild_id:
-        return "This command only works in a server channel, not DMs."
-    return None
+def _resolve_guild_id(msg: FlxMessage, rest: FluxerREST) -> str:
+    if msg.guild_id:
+        return msg.guild_id
+    try:
+        channel = rest.get_channel(msg.channel_id)
+        guild_id = channel.get("guild_id")
+        if guild_id:
+            return str(guild_id)
+    except RuntimeError:
+        pass
+    raise ValueError("This command only works in a server channel, not DMs.")
 
 
 def dispatch_danger(
@@ -92,9 +100,10 @@ def _cmd_abuse(args: str, msg: FlxMessage, rest: FluxerREST, *, prefix: str) -> 
     if blocked:
         return BuiltinResult(replies=[blocked], delete_invocation=True)
 
-    err = _need_guild(msg)
-    if err:
-        return BuiltinResult(replies=[err])
+    try:
+        guild_id = _resolve_guild_id(msg, rest)
+    except ValueError as exc:
+        return BuiltinResult(replies=[str(exc)])
 
     chunks = subargs.rsplit(None, 2)
     if len(chunks) < 3:
@@ -119,7 +128,6 @@ def _cmd_abuse(args: str, msg: FlxMessage, rest: FluxerREST, *, prefix: str) -> 
         delay = MIN_SPAM_DELAY
 
     channel_id = msg.channel_id
-    guild_id = msg.guild_id
 
     def _run() -> None:
         for _ in range(amount):
@@ -143,31 +151,37 @@ def _cmd_mod(args: str, msg: FlxMessage, rest: FluxerREST, *, prefix: str) -> Bu
     if blocked:
         return BuiltinResult(replies=[blocked], delete_invocation=True)
 
-    err = _need_guild(msg)
-    if err:
-        return BuiltinResult(replies=[err])
-
     parts = args.split(None, 1)
-    if len(parts) < 2:
-        return _usage(prefix, "mod", "ban|kick <@user|id>")
-    sub, target_raw = parts[0].lower(), parts[1].strip()
-    try:
-        user_id = parse_user_id(target_raw)
-    except ValueError as exc:
-        return BuiltinResult(replies=[str(exc)])
+    if not parts:
+        return _usage(prefix, "mod", "ban|kick <@user|id> (kick: reply to user)")
+    sub = parts[0].lower()
+    target_raw = parts[1].strip() if len(parts) > 1 else ""
 
-    guild_id = msg.guild_id
-    assert guild_id
+    if sub not in ("ban", "kick"):
+        return _usage(prefix, "mod", "ban|kick <@user|id> (kick: reply to user)")
+    if not target_raw and sub == "ban":
+        return _usage(prefix, "mod", "ban|kick <@user|id>")
+
+    try:
+        guild_id = _resolve_guild_id(msg, rest)
+        user_id = resolve_target_user_id(
+            target_raw,
+            msg,
+            rest,
+            empty_hint=(
+                "Provide a @user, user ID, or reply to their message with `!mod kick`."
+            ),
+        )
+    except ValueError as exc:
+        return BuiltinResult(replies=[str(exc)], delete_invocation=True)
 
     try:
         if sub == "ban":
             rest.ban_member(guild_id, user_id)
             action = "banned"
-        elif sub == "kick":
+        else:
             rest.kick_member(guild_id, user_id)
             action = "kicked"
-        else:
-            return _usage(prefix, "mod", "ban|kick <@user|id>")
     except RuntimeError as exc:
         return BuiltinResult(replies=[f"Mod failed: {exc}"], delete_invocation=True)
 

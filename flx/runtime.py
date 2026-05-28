@@ -16,6 +16,7 @@ from flx.rest import FluxerREST
 from flx.script_hub import dispatch_hub_command, dispatch_message_listeners, ensure_registry
 from flx.state import load_gui_settings, save_gui_settings, save_stats
 from flx.troll import get_troll_manager
+from flx.version import APP_VERSION
 
 _runtime: "BotRuntime | None" = None
 
@@ -179,7 +180,7 @@ class BotRuntime:
                 "display_name": self._user_name,
                 "handle": self._user_name.lower().replace(" ", ""),
                 "user_id": self._user_id or ("…" if has_token else None),
-                "version": "1.0.0",
+                "version": APP_VERSION,
                 "commands_used": self._commands_used,
                 "messages_seen": self._messages_seen,
                 "error": self._error,

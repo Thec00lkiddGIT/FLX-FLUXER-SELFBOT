@@ -1,21 +1,15 @@
 #!/usr/bin/env bash
-# Build macOS app bundle: dist/FLX FLUXER SELFBOT.app
+# Build macOS app bundle: dist/FLX.app
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PYTHON="${PYTHON:-python3}"
-if [[ ! -d .venv-build ]]; then
-  "$PYTHON" -m venv .venv-build
-fi
-# shellcheck disable=SC1091
-source .venv-build/bin/activate
-pip install -q -U pip
-pip install -q -r requirements.txt -r requirements-build.txt
-python scripts/prepare_icons.py
+python3 -m pip install -q -r requirements.txt -r requirements-build.txt
+python3 scripts/prepare_icons.py
 pyinstaller build/flx.spec --clean --noconfirm
+
 cd dist
-ditto -c -k --sequesterRsrc --keepParent "FLX FLUXER SELFBOT.app" FLX-FLUXER-SELFBOT-macOS.zip
-echo ""
+ditto -c -k --sequesterRsrc --keepParent "FLX.app" FLX-macOS.zip
+cd ..
 echo "Done."
-echo "  App:  dist/FLX FLUXER SELFBOT.app"
-echo "  Zip:  dist/FLX-FLUXER-SELFBOT-macOS.zip"
+echo "  App:  dist/FLX.app"
+echo "  Zip:  dist/FLX-macOS.zip"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Chromebook / Linux: open the dashboard in Chrome (recommended on ChromeOS).
-DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$DIR"
-exec ./FLX-FLUXER-SELFBOT --chromebook "$@"
+# Run FLX in Chromebook / Linux browser mode (from extracted zip).
+set -euo pipefail
+cd "$(dirname "$0")"
+exec ./FLX --chromebook "$@"

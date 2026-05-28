@@ -15,7 +15,7 @@ steps:
       python -m pip install -U pip
       pip install -r requirements.txt -r requirements-build.txt
       pyinstaller build/flx.spec --clean --noconfirm
-      powershell Compress-Archive -Path dist\FLX-FLUXER-SELFBOT -DestinationPath dist\FLX-FLUXER-SELFBOT-Windows.zip -Force
+      powershell Compress-Archive -Path dist\FLX -DestinationPath dist\FLX-Windows.zip -Force
     displayName: Build Windows release
 
   - task: PublishBuildArtifacts@1

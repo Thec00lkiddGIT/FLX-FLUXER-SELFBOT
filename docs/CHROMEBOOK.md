@@ -15,9 +15,9 @@ Without the Linux development environment, you cannot run the selfbot locally. U
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip unzip
 cd ~
-wget -O flx.zip https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases/latest/download/FLX-FLUXER-SELFBOT-ChromeOS.zip
+wget -O flx.zip https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases/latest/download/FLX-ChromeOS.zip
 unzip flx.zip
-cd FLX-FLUXER-SELFBOT
+cd FLX
 ./run-chromebook.sh
 ```
 
@@ -32,7 +32,7 @@ If GTK/WebKit is installed:
 
 ```bash
 sudo apt install -y python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1
-./FLX-FLUXER-SELFBOT
+./FLX
 ```
 
 Most Chromebook users should use `./run-chromebook.sh` instead.

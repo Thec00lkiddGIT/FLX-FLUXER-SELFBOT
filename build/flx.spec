@@ -1,4 +1,4 @@
-# PyInstaller spec for FLX FLUXER SELFBOT
+# PyInstaller spec for FLX
 # macOS:      pyinstaller build/flx.spec --clean --noconfirm
 # Windows:    pyinstaller build\flx.spec --clean --noconfirm
 # Linux/Cros: pyinstaller build/flx.spec --clean --noconfirm
@@ -23,19 +23,30 @@ datas = [
 
 hiddenimports = [
     "flx",
+    "flx.version",
     "flx.config",
     "flx.paths",
     "flx.runtime",
     "flx.gateway",
     "flx.rest",
+    "flx.rate_limit",
     "flx.commands",
     "flx.danger_cmds",
     "flx.troll",
     "flx.abuse_settings",
     "flx.parse_util",
+    "flx.targets",
     "flx.textutil",
     "flx.script_hub",
     "flx.fluxerscript",
+    "flx.snowflake",
+    "flx.user_info",
+    "flx.webhook_cmd",
+    "flx.httpcat",
+    "flx.pokemon",
+    "flx.poof",
+    "flx.microlink",
+    "flx.message_attachments",
     "flx.gui.server",
     "flx.gui.bootstrap",
     "flx.gui.native_window",
@@ -76,7 +87,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="FLX-FLUXER-SELFBOT",
+    name="FLX",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -98,13 +109,13 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name="FLX-FLUXER-SELFBOT",
+    name="FLX",
 )
 
 if sys.platform == "darwin":
     app = BUNDLE(
         coll,
-        name="FLX FLUXER SELFBOT.app",
+        name="FLX.app",
         icon=str(ICON_ICNS) if ICON_ICNS.is_file() else None,
-        bundle_identifier="app.fluxer.flx.selfbot",
+        bundle_identifier="app.fluxer.flx",
     )

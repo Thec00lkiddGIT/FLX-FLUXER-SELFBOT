@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import re
 
-MENTION_RE = re.compile(r"<@!?(\d+)>")
+# <@123>, <@!123>, and Fluxer/Discord-style <@123:display_name>
+MENTION_RE = re.compile(r"<@!?(\d+)(?::[^>]+)?>")
 
 
 def parse_user_id(raw: str) -> str:

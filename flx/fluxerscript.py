@@ -100,10 +100,15 @@ class FlxMessage:
     @classmethod
     def from_gateway(cls, data: dict) -> FlxMessage:
         author = data.get("author") or {}
+        guild_id = data.get("guild_id")
+        if not guild_id:
+            guild = data.get("guild")
+            if isinstance(guild, dict) and guild.get("id"):
+                guild_id = guild["id"]
         return cls(
             id=str(data.get("id", "")),
             channel_id=str(data.get("channel_id", "")),
-            guild_id=str(data["guild_id"]) if data.get("guild_id") else None,
+            guild_id=str(guild_id) if guild_id else None,
             content=str(data.get("content") or ""),
             author_id=str(author.get("id", "")),
             author_name=str(author.get("username") or author.get("global_name") or "?"),

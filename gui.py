@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch FLX FLUXER SELFBOT (native dashboard or browser UI)."""
+"""Launch FLX (native dashboard or browser UI)."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def _run_web(host: str, port: int, *, chromebook: bool = False) -> int:
     if chromebook or _is_chromeos_linux():
         print("Chromebook mode: open this URL in Chrome:", url, flush=True)
     else:
-        print(f"FLX FLUXER SELFBOT web UI: {url}", flush=True)
+        print(f"FLX web UI: {url}", flush=True)
     prepare_runtime()
     try:
         webbrowser.open(url)
@@ -75,7 +75,7 @@ def _run_web(host: str, port: int, *, chromebook: bool = False) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="FLX FLUXER SELFBOT")
+    parser = argparse.ArgumentParser(description="FLX")
     parser.add_argument("--web", action="store_true", help="Open dashboard in browser")
     parser.add_argument(
         "--chromebook",

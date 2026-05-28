@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.0.4
 
 image: Visual Studio 2022
 
@@ -11,8 +11,8 @@ install:
 
 build_script:
   - cmd: "%PYTHON% -m PyInstaller build\flx.spec --clean --noconfirm"
-  - ps: Compress-Archive -Path dist\FLX-FLUXER-SELFBOT -DestinationPath dist\FLX-FLUXER-SELFBOT-Windows.zip -Force
+  - ps: Compress-Archive -Path dist\FLX -DestinationPath dist\FLX-Windows.zip -Force
 
 artifacts:
-  - path: dist\FLX-FLUXER-SELFBOT-Windows.zip
-    name: FLX-FLUXER-SELFBOT-Windows
+  - path: dist\FLX-Windows.zip
+    name: FLX-Windows

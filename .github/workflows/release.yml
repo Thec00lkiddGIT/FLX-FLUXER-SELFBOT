@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release tag (e.g. v1.0.0)"
+        description: "Release tag (e.g. v1.0.4)"
         required: true
-        default: "v1.0.0"
+        default: "v1.0.4"
 
 permissions:
   contents: write
@@ -39,12 +39,12 @@ jobs:
       - name: Zip macOS release
         run: |
           cd dist
-          ditto -c -k --sequesterRsrc --keepParent "FLX FLUXER SELFBOT.app" FLX-FLUXER-SELFBOT-macOS.zip
+          ditto -c -k --sequesterRsrc --keepParent "FLX.app" FLX-macOS.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FLX-FLUXER-SELFBOT-macOS
-          path: dist/FLX-FLUXER-SELFBOT-macOS.zip
+          name: FLX-macOS
+          path: dist/FLX-macOS.zip
 
   build-windows:
     runs-on: windows-latest
@@ -67,12 +67,12 @@ jobs:
       - name: Zip Windows release
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/FLX-FLUXER-SELFBOT" -DestinationPath "dist/FLX-FLUXER-SELFBOT-Windows.zip" -Force
+          Compress-Archive -Path "dist/FLX" -DestinationPath "dist/FLX-Windows.zip" -Force
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FLX-FLUXER-SELFBOT-Windows
-          path: dist/FLX-FLUXER-SELFBOT-Windows.zip
+          name: FLX-Windows
+          path: dist/FLX-Windows.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -103,18 +103,17 @@ jobs:
 
       - name: Package Chromebook zip
         run: |
-          chmod +x dist/FLX-FLUXER-SELFBOT/FLX-FLUXER-SELFBOT
-          cp scripts/run_chromebook.sh dist/FLX-FLUXER-SELFBOT/run-chromebook.sh
-          chmod +x dist/FLX-FLUXER-SELFBOT/run-chromebook.sh
-          cp assets/icon.png dist/FLX-FLUXER-SELFBOT/icon.png
+          chmod +x dist/FLX/FLX
+          cp scripts/run_chromebook.sh dist/FLX/run-chromebook.sh
+          chmod +x dist/FLX/run-chromebook.sh
+          cp assets/icon.png dist/FLX/icon.png
           cd dist
-          zip -r FLX-FLUXER-SELFBOT-ChromeOS.zip FLX-FLUXER-SELFBOT
-          cp FLX-FLUXER-SELFBOT-ChromeOS.zip FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
+          zip -r FLX-ChromeOS.zip FLX
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FLX-FLUXER-SELFBOT-ChromeOS
-          path: dist/FLX-FLUXER-SELFBOT-ChromeOS.zip
+          name: FLX-ChromeOS
+          path: dist/FLX-ChromeOS.zip
 
   publish:
     needs: [build-macos, build-windows, build-linux]
@@ -128,11 +127,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: FLX FLUXER SELFBOT ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          name: FLX ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           files: |
-            artifacts/FLX-FLUXER-SELFBOT-macOS/FLX-FLUXER-SELFBOT-macOS.zip
-            artifacts/FLX-FLUXER-SELFBOT-Windows/FLX-FLUXER-SELFBOT-Windows.zip
-            artifacts/FLX-FLUXER-SELFBOT-ChromeOS/FLX-FLUXER-SELFBOT-ChromeOS.zip
+            artifacts/FLX-macOS/FLX-macOS.zip
+            artifacts/FLX-Windows/FLX-Windows.zip
+            artifacts/FLX-ChromeOS/FLX-ChromeOS.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

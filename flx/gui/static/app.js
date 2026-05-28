@@ -151,7 +151,7 @@ function applyStatus(s) {
   el("display-name").textContent = name;
   el("profile-name").textContent = name;
   el("profile-handle").textContent = "@" + (s.handle || "fluxer");
-  el("version").textContent = "v" + (s.version || "1.0.0");
+  el("version").textContent = "v" + (s.version || "1.0.4");
   el("user-id").textContent = String(s.user_id ?? "-");
   el("api-url").textContent = s.api_url || "-";
   if (el("prefix-display")) el("prefix-display").textContent = s.prefix || "!";

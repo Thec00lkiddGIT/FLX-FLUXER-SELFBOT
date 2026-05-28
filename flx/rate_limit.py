@@ -7,15 +7,16 @@ import logging
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Mapping
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
 
 log = logging.getLogger("flx.rate_limit")
 
-MAX_ATTEMPTS = 10
-MAX_TOTAL_SLEEP = 120.0
+MAX_ATTEMPTS = 30
+MAX_TOTAL_SLEEP = 900.0
 DEFAULT_RETRY_SECONDS = 1.0
-MAX_SINGLE_WAIT = 60.0
+MAX_SINGLE_WAIT = 600.0
 
 _RETRY_HTTP_CODES = frozenset({429, 503})
 _RETRY_API_CODES = frozenset(
@@ -37,6 +38,27 @@ def _parse_json(body: bytes) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def _normalize_delay_seconds(value: object, *, key: str = "") -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number < 0:
+        return None
+
+    lower_key = key.lower()
+    now = time.time()
+    if "ms" in lower_key:
+        number /= 1000.0
+    elif "reset" in lower_key and number > now:
+        # Absolute reset timestamp (epoch seconds) -> delta.
+        number -= now
+    elif number > 1000:
+        # Many APIs return retry_after in milliseconds.
+        number /= 1000.0
+    return max(0.0, number)
+
+
 def _header_retry_seconds(headers) -> float | None:
     if headers is None:
         return None
@@ -45,12 +67,9 @@ def _header_retry_seconds(headers) -> float | None:
         if not raw:
             continue
         text = str(raw).strip()
-        try:
-            value = float(text)
-            if value >= 0:
-                return value
-        except ValueError:
-            pass
+        value = _normalize_delay_seconds(text, key=key)
+        if value is not None:
+            return value
         try:
             when = parsedate_to_datetime(text)
             if when.tzinfo is None:
@@ -66,20 +85,32 @@ def _header_retry_seconds(headers) -> float | None:
 def retry_delay_seconds(status: int, body: bytes, headers) -> float | None:
     data = _parse_json(body)
     if data is not None:
-        for key in ("retry_after", "retryAfter", "cooldown", "wait"):
+        for key in (
+            "retry_after",
+            "retryAfter",
+            "retry_after_ms",
+            "retryAfterMs",
+            "cooldown",
+            "cooldown_ms",
+            "wait",
+            "wait_ms",
+            "reset_after",
+            "resetAt",
+        ):
             if key in data and data[key] is not None:
-                try:
-                    return max(0.0, float(data[key]))
-                except (TypeError, ValueError):
-                    pass
+                value = _normalize_delay_seconds(data[key], key=key)
+                if value is not None:
+                    return value
         nested = data.get("errors")
         if isinstance(nested, list):
             for item in nested:
-                if isinstance(item, dict) and item.get("retry_after") is not None:
-                    try:
-                        return max(0.0, float(item["retry_after"]))
-                    except (TypeError, ValueError):
-                        pass
+                if isinstance(item, Mapping):
+                    for key in ("retry_after", "retry_after_ms", "cooldown", "wait"):
+                        if item.get(key) is None:
+                            continue
+                        value = _normalize_delay_seconds(item.get(key), key=key)
+                        if value is not None:
+                            return value
 
     header_wait = _header_retry_seconds(headers)
     if header_wait is not None:

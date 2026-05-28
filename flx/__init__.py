@@ -1,1 +1,1 @@
-"""FLX FLUXER SELFBOT - Fluxer selfbot with Script Hub."""
+"""FLX - Fluxer selfbot with Script Hub."""

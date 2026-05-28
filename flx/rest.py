@@ -65,10 +65,16 @@ class FluxerREST:
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
             with self._open(req, timeout=30) as resp:
-                raw = resp.read()
-                if not raw:
+                status = getattr(resp, "status", 200)
+                if status in (204, 205):
                     return None
-                return json.loads(raw.decode("utf-8"))
+                raw = resp.read()
+                if not raw or not raw.strip():
+                    return None
+                try:
+                    return json.loads(raw.decode("utf-8"))
+                except json.JSONDecodeError:
+                    return None
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
@@ -77,6 +83,25 @@ class FluxerREST:
 
     def get_me(self) -> dict:
         return self._request("GET", "/users/@me")
+
+    def get_channel(self, channel_id: str) -> dict:
+        result = self._request("GET", f"/channels/{channel_id}")
+        return result if isinstance(result, dict) else {}
+
+    def get_message(self, channel_id: str, message_id: str) -> dict:
+        result = self._request(
+            "GET",
+            f"/channels/{channel_id}/messages/{message_id}",
+        )
+        return result if isinstance(result, dict) else {}
+
+    def get_user(self, user_id: str) -> dict:
+        result = self._request("GET", f"/users/{user_id}")
+        return result if isinstance(result, dict) else {}
+
+    def get_user_profile(self, user_id: str) -> dict:
+        result = self._request("GET", f"/users/{user_id}/profile")
+        return result if isinstance(result, dict) else {}
 
     def get_gateway(self) -> dict:
         """Bot-only on many instances; user selfbots should fall back to wss://gateway.fluxer.app."""
@@ -266,5 +291,14 @@ class FluxerREST:
             body["reason"] = reason
         self._request("PUT", f"/guilds/{guild_id}/bans/{user_id}", body=body)
 
-    def kick_member(self, guild_id: str, user_id: str) -> None:
-        self._request("DELETE", f"/guilds/{guild_id}/members/{user_id}")
+    def kick_member(
+        self,
+        guild_id: str,
+        user_id: str,
+        *,
+        reason: str | None = None,
+    ) -> None:
+        route = f"/guilds/{guild_id}/members/{user_id}"
+        if reason:
+            route = f"{route}?{urllib.parse.urlencode({'reason': reason})}"
+        self._request("DELETE", route)

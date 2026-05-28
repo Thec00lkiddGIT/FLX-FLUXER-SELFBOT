@@ -38,7 +38,7 @@ def _json_response(handler: BaseHTTPRequestHandler, code: int, payload: object) 
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "FlxDashboard/1.0"
+    server_version = "FLX/1.0.4"
 
     def log_message(self, format: str, *args: object) -> None:
         return

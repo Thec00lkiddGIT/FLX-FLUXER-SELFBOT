@@ -1,6 +1,8 @@
-# FLX FLUXER SELFBOT
+# FLX
 
 Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://web.fluxer.app), with an **Ibot-style dashboard** and **Nighty-style FlxScript** hub.
+
+**Current version:** 1.0.4
 
 ## Downloads
 
@@ -8,9 +10,9 @@ Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://w
 
 | Platform | File |
 |----------|------|
-| **macOS** (Apple Silicon) | `FLX-FLUXER-SELFBOT-macOS.zip` -> open `FLX FLUXER SELFBOT.app` |
-| **Windows** | `FLX-FLUXER-SELFBOT-Windows.zip` -> run `FLX-FLUXER-SELFBOT.exe` |
-| **ChromeOS / Chromebook / Linux** | `FLX-FLUXER-SELFBOT-ChromeOS.zip` -> run `./run-chromebook.sh` |
+| **macOS** (Apple Silicon) | `FLX-macOS.zip` -> open `FLX.app` |
+| **Windows** | `FLX-Windows.zip` -> run `FLX.exe` |
+| **ChromeOS / Chromebook / Linux** | `FLX-ChromeOS.zip` -> run `./run-chromebook.sh` |
 
 **Chromebook:** Turn on Linux (Crostini), unzip, run `./run-chromebook.sh`, open the URL in Chrome. Full guide: [docs/CHROMEBOOK.md](docs/CHROMEBOOK.md)
 
@@ -62,6 +64,8 @@ Full guide: [docs/FLXSCRIPT_GUIDE.md](docs/FLXSCRIPT_GUIDE.md)
 | `!pokemon <name\|id\|random>` | Pokemon sprite and stats (PokeAPI) |
 | `!poof` | Remove image background (reply with image; needs `POOF_API_KEY`) |
 | `!screenshot <url>` | Screenshot a URL (Microlink) |
+| `!info user` | Profile, avatar, snowflake decode |
+| `!wb <url> send\|delete` | Webhook send or delete via URL |
 
 Outgoing messages wait and retry on channel slowmode / rate limits automatically.
 

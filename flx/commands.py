@@ -18,6 +18,8 @@ from flx.qr import fetch_qr_png, format_qr_caption
 from flx.randomword import word_reply
 from flx.rest import FluxerREST
 from flx.weather import weather_reply
+from flx.user_info import user_info_lookup
+from flx.webhook_cmd import run_webhook_command
 from flx.youtube import youtube_reply
 
 PREFIX = command_prefix()
@@ -94,6 +96,8 @@ COMMANDS: list[tuple[str, str]] = [
     ("pokemon", "PokéAPI lookup (name, id, or random)"),
     ("poof", "Remove image background (attach image, Poof.bg)"),
     ("screenshot", "Screenshot a URL (Microlink)"),
+    ("info", "user - profile, avatar, snowflake decode"),
+    ("wb", "Webhook send/delete via URL"),
 ]
 
 
@@ -346,6 +350,46 @@ def dispatch_builtin(
             return BuiltinResult(replies=[str(exc)])
         except RuntimeError as exc:
             return _err("OSINT", exc)
+
+    if name == "info":
+        parts = args.split(None, 1)
+        sub = parts[0].lower() if parts else ""
+        subargs = parts[1] if len(parts) > 1 else ""
+        if sub != "user":
+            return BuiltinResult(
+                replies=[
+                    _usage(
+                        "info",
+                        "user [@user|id]\n"
+                        "Examples: `!info user` `!info user @someone` (reply also works)",
+                    )
+                ]
+            )
+        try:
+            text, files = user_info_lookup(message, rest, subargs)
+            return BuiltinResult(replies=[text], files=files)
+        except ValueError as exc:
+            return BuiltinResult(replies=[str(exc)])
+        except RuntimeError as exc:
+            return _err("Info", exc)
+
+    if name == "wb":
+        if not args.strip():
+            return BuiltinResult(
+                replies=[
+                    _usage(
+                        "wb",
+                        "<webhook url> send <text>\n"
+                        "`!wb <url> delete` - delete webhook (token URL, no admin)",
+                    )
+                ]
+            )
+        try:
+            return BuiltinResult(replies=[run_webhook_command(args)])
+        except ValueError as exc:
+            return BuiltinResult(replies=[str(exc)])
+        except RuntimeError as exc:
+            return _err("Webhook", exc)
 
     if name == "help":
         from flx.script_hub import hub_command_specs
