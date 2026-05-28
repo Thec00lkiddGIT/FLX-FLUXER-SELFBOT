@@ -125,16 +125,32 @@ jobs:
         with:
           path: artifacts
 
+      - name: Read release notes from the tag
+        id: notes
+        run: |
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}"
+          BODY="$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null | sed '/^$/d' | head -1)"
+          if [ -z "$BODY" ]; then
+            BODY="Update for $TAG"
+          fi
+          {
+            echo "tag=$TAG"
+            echo "body<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: FLX ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }} — new build
+          tag_name: ${{ steps.notes.outputs.tag }}
+          name: FLX ${{ steps.notes.outputs.tag }}
+          body: ${{ steps.notes.outputs.body }}
           files: |
             artifacts/FLX-macOS/FLX-macOS.zip
             artifacts/FLX-Windows/FLX-Windows.zip
             artifacts/FLX-ChromeOS/FLX-ChromeOS.zip
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

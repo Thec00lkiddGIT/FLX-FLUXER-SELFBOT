@@ -71,7 +71,11 @@ def _build_payload() -> dict:
     if content:
         payload["content"] = content[:2000]
     elif url:
-        payload["content"] = f"**{tag}** just dropped — Mac, Windows, and Chromebook builds are on GitHub."
+        short = body.splitlines()[0].strip() if body else ""
+        if short:
+            payload["content"] = f"**{tag}** — {short}"
+        else:
+            payload["content"] = f"**{tag}** just dropped — grab it on GitHub."
     return payload
 
 
