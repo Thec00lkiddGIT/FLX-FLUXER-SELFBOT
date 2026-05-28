@@ -119,6 +119,8 @@ jobs:
     needs: [build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -135,3 +137,20 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # GITHUB_TOKEN-created releases do not fire release:published for other workflows.
+      - name: Notify Fluxer #releases
+        env:
+          FLUXER_RELEASES_WEBHOOK_URL: ${{ secrets.FLUXER_RELEASES_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FLUXER_RELEASES_WEBHOOK_URL:-}" ]; then
+            echo "FLUXER_RELEASES_WEBHOOK_URL not set; skip Fluxer notify."
+            exit 0
+          fi
+          export RELEASE_NAME=$(gh release view "$RELEASE_TAG" --json name -q .name)
+          export RELEASE_BODY=$(gh release view "$RELEASE_TAG" --json body -q .body)
+          export RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
+          python3 scripts/notify_fluxer_release.py

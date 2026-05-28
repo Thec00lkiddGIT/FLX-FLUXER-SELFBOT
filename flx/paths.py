@@ -126,11 +126,41 @@ def _copy_bundled_tree(bundled: Path, hub: Path) -> None:
             shutil.copy2(item, dest)
 
 
+_LEGACY_HUB_IDS = frozenset({"echo", "httpcat", "pokemon", "check"})
+_HUB_MIGRATION_MARKER = ".personal_hub_migrated_v2"
+
+
+def _prune_orphan_hub_py(hub: Path, scripts: list[dict]) -> None:
+    allowed = {str(entry.get("id") or "").strip() for entry in scripts}
+    allowed.discard("")
+    for py in hub.glob("*.py"):
+        if py.stem not in allowed:
+            py.unlink(missing_ok=True)
+
+
+def _migrate_legacy_personal_scripts(hub: Path, manifest: Path) -> None:
+    """One-time: remove old built-ins that moved to the community hub."""
+    marker = hub / _HUB_MIGRATION_MARKER
+    if marker.is_file():
+        return
+    scripts = _read_hub_manifest(manifest)
+    kept = [e for e in scripts if str(e.get("id") or "").strip() not in _LEGACY_HUB_IDS]
+    for legacy_id in _LEGACY_HUB_IDS:
+        (hub / f"{legacy_id}.py").unlink(missing_ok=True)
+    if len(kept) != len(scripts):
+        _write_hub_manifest(manifest, kept)
+    marker.write_text("1\n", encoding="utf-8")
+
+
 def _sync_personal_hub(hub: Path, bundled: Path | None) -> None:
-    """Personal Script Hub is bundled-only (empty by default). Drops user-added scripts."""
+    """Seed an empty personal hub on first launch; keep user-installed scripts after that."""
     manifest = hub / "manifest.json"
+    if manifest.is_file():
+        _migrate_legacy_personal_scripts(hub, manifest)
+        _prune_orphan_hub_py(hub, _read_hub_manifest(manifest))
+        return
+
     scripts: list[dict] = []
-    allowed_ids: set[str] = set()
     if bundled and bundled.is_dir():
         scripts = _read_hub_manifest(bundled / "manifest.json")
         for entry in scripts:
@@ -140,11 +170,8 @@ def _sync_personal_hub(hub: Path, bundled: Path | None) -> None:
             src = bundled / f"{sid}.py"
             if src.is_file():
                 shutil.copy2(src, hub / f"{sid}.py")
-                allowed_ids.add(sid)
-    for py in hub.glob("*.py"):
-        if py.stem not in allowed_ids:
-            py.unlink(missing_ok=True)
     _write_hub_manifest(manifest, scripts)
+    (hub / _HUB_MIGRATION_MARKER).write_text("1\n", encoding="utf-8")
 
 
 def ensure_script_hub() -> Path:

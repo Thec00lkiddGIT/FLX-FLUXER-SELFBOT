@@ -1,8 +1,8 @@
 """Community Script Hub - read-only bundled scripts (install to personal hub only)."""
 
-COMMUNITY_READONLY = True
-
 from __future__ import annotations
+
+COMMUNITY_READONLY = True
 
 import json
 import re

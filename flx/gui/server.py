@@ -13,6 +13,7 @@ from flx.danger_cmds import DANGER_COMMANDS
 from flx.gui.commands_list import COMMANDS
 from flx.paths import app_support_dir, ensure_env_file, open_env_in_editor
 from flx.runtime import get_runtime
+from flx.version import APP_VERSION
 from flx.community_hub import (
     COMMUNITY_READONLY,
     community_script_dict,
@@ -46,7 +47,7 @@ def _json_response(handler: BaseHTTPRequestHandler, code: int, payload: object) 
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "FLX/1.0.7"
+    server_version = f"FLX/{APP_VERSION}"
 
     def log_message(self, format: str, *args: object) -> None:
         return

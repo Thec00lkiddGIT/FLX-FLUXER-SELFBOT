@@ -1,6 +1,6 @@
 {
   "name": "flx",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Fluxer selfbot for fluxer.app / web.fluxer.app",
   "type": "module",
   "main": "dist/index.js",

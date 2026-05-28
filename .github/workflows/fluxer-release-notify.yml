@@ -1,8 +1,9 @@
 # Posts new GitHub releases to the Fluxer #releases webhook ("updates").
 #
-# One-time setup (repo admin):
-#   gh secret set FLUXER_RELEASES_WEBHOOK_URL < ~/Library/Application\ Support/Flx/releases_webhook.url
-# (Windows: %APPDATA%\Flx\releases_webhook.url)
+# Note: Releases created by the Release workflow use GITHUB_TOKEN and do NOT
+# trigger release:published here. Those are notified from release.yml instead.
+#
+# Setup: gh secret set FLUXER_RELEASES_WEBHOOK_URL < releases_webhook.url
 
 name: Fluxer release notify
 
@@ -17,62 +18,14 @@ jobs:
   notify-fluxer:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Post release to Fluxer webhook
         env:
-          WEBHOOK_URL: ${{ secrets.FLUXER_RELEASES_WEBHOOK_URL }}
-          TAG: ${{ github.event.release.tag_name }}
-          NAME: ${{ github.event.release.name }}
-          BODY: ${{ github.event.release.body }}
-          HTML_URL: ${{ github.event.release.html_url }}
-          REPO: ${{ github.repository }}
-        run: |
-          if [ -z "$WEBHOOK_URL" ]; then
-            echo "FLUXER_RELEASES_WEBHOOK_URL is not set. Skipping Fluxer notification."
-            echo "Create the webhook in #releases and run: gh secret set FLUXER_RELEASES_WEBHOOK_URL"
-            exit 0
-          fi
-
-          python3 <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          tag = os.environ.get("TAG", "")
-          name = os.environ.get("NAME", "") or tag
-          body = (os.environ.get("BODY") or "").strip()
-          url = os.environ.get("HTML_URL", "")
-          repo = os.environ.get("REPO", "")
-          webhook = os.environ["WEBHOOK_URL"]
-
-          lines = [
-              f"**New FLX release: `{tag}`**",
-              "",
-              name,
-              "",
-              f"**Downloads:** {url}",
-          ]
-          if body:
-              excerpt = body[:1500]
-              if len(body) > 1500:
-                  excerpt += "\n…"
-              lines.extend(["", excerpt])
-          lines.extend(["", f"Repo: `{repo}`"])
-
-          payload = {
-              "content": "\n".join(lines)[:2000],
-              "username": "updates",
-          }
-
-          req = urllib.request.Request(
-              webhook,
-              data=json.dumps(payload).encode("utf-8"),
-              headers={
-                  "Content-Type": "application/json",
-                  "User-Agent": "FLX-GitHub-Release-Notify",
-              },
-              method="POST",
-          )
-          with urllib.request.urlopen(req, timeout=30) as resp:
-              resp.read()
-          print("Posted release notification to Fluxer.")
-          PY
+          FLUXER_RELEASES_WEBHOOK_URL: ${{ secrets.FLUXER_RELEASES_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/notify_fluxer_release.py
