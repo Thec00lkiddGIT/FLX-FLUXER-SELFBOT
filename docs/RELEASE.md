@@ -26,6 +26,18 @@ Or: **Actions** -> **Release** -> **Run workflow** -> version `v1.0.4`
 
 CI uploads: `FLX-macOS.zip`, `FLX-Windows.zip`, `FLX-ChromeOS.zip`
 
+## Fluxer #releases webhook (automated)
+
+When a GitHub release is **published**, `.github/workflows/fluxer-release-notify.yml` posts to the **updates** webhook in `#releases`.
+
+**One-time GitHub secret** (after creating the webhook in `#releases`):
+
+```bash
+gh secret set FLUXER_RELEASES_WEBHOOK_URL < "$HOME/Library/Application Support/Flx/releases_webhook.url"
+```
+
+The webhook URL is also saved locally at `~/Library/Application Support/Flx/releases_webhook.url` when you run the setup script (do not commit this file).
+
 Upload a Windows zip to an existing release:
 
 ```bash
