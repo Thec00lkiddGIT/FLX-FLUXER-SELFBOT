@@ -1,4 +1,6 @@
-"""Community Script Hub - shared scripts you publish for others to install."""
+"""Community Script Hub - read-only bundled scripts (install to personal hub only)."""
+
+COMMUNITY_READONLY = True
 
 from __future__ import annotations
 
@@ -32,77 +34,23 @@ def _copy_bundled_community(bundled: Path, dest: Path) -> None:
             shutil.copy2(item, target)
 
 
-def _merge_bundled_community(community: Path, bundled: Path) -> None:
+def _sync_community_from_bundled(community: Path, bundled: Path) -> None:
+    """Replace local community hub with bundled scripts only (no user uploads)."""
     import shutil
 
-    manifest = community / "manifest.json"
-    user_scripts = _load_manifest_from(manifest)
-    user_ids = {str(s.get("id")) for s in user_scripts if s.get("id")}
-    user_commands: set[str] = set()
-    for entry in user_scripts:
-        cmd = str(entry.get("command") or "").strip().lower()
-        if cmd:
-            user_commands.add(cmd)
-        for c in entry.get("commands") or []:
-            if c:
-                user_commands.add(str(c).strip().lower())
-
-    bundled_manifest = bundled / "manifest.json"
-    if not bundled_manifest.is_file():
-        return
-    try:
-        data = json.loads(bundled_manifest.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return
-    bundled_scripts = data.get("scripts")
-    if not isinstance(bundled_scripts, list):
+    if not bundled.is_dir():
+        _save_manifest_to(community / "manifest.json", [])
         return
 
-    bundled_meta_keys = (
-        "name",
-        "author",
-        "description",
-        "usage",
-        "command",
-        "help",
-        "commands",
-        "submitted_by",
-    )
+    bundled_scripts = _load_manifest_from(bundled / "manifest.json")
+    allowed_ids = {str(e.get("id") or "").strip() for e in bundled_scripts if e.get("id")}
 
-    changed = False
-    for entry in bundled_scripts:
-        sid = str(entry.get("id") or "").strip()
-        if not sid:
-            continue
-        if sid in user_ids:
-            existing = next((e for e in user_scripts if e.get("id") == sid), None)
-            if existing is not None:
-                for key in bundled_meta_keys:
-                    if key in entry:
-                        existing[key] = entry[key]
-                src = bundled / f"{sid}.py"
-                if src.is_file():
-                    shutil.copy2(src, community / f"{sid}.py")
-                changed = True
-            continue
-        cmds = {str(entry.get("command") or "").strip().lower()}
-        for c in entry.get("commands") or []:
-            if c:
-                cmds.add(str(c).strip().lower())
-        cmds.discard("")
-        if cmds & user_commands:
-            continue
-        src = bundled / f"{sid}.py"
-        if not src.is_file():
-            continue
-        shutil.copy2(src, community / f"{sid}.py")
-        user_scripts.append(entry)
-        user_ids.add(sid)
-        user_commands |= cmds
-        changed = True
+    for py in community.glob("*.py"):
+        if py.stem not in allowed_ids:
+            py.unlink(missing_ok=True)
 
-    if changed or not manifest.is_file():
-        _save_manifest_to(manifest, user_scripts)
+    _copy_bundled_community(bundled, community)
+    _save_manifest_to(community / "manifest.json", bundled_scripts)
 
 
 def _load_manifest_from(path: Path) -> list[dict]:
@@ -126,13 +74,14 @@ def ensure_community_hub() -> Path:
     bundled = bundled_community_dir()
     manifest = community / "manifest.json"
     if bundled:
-        if not manifest.is_file():
-            _copy_bundled_community(bundled, community)
-        else:
-            _merge_bundled_community(community, bundled)
+        _sync_community_from_bundled(community, bundled)
     elif not manifest.is_file():
         _save_manifest_to(manifest, [])
     return community
+
+
+def community_writes_allowed() -> bool:
+    return not COMMUNITY_READONLY
 
 
 def _community_dir() -> Path:
@@ -214,6 +163,9 @@ def save_community_script(
     code: str,
     submitted_by: str = "",
 ) -> tuple[HubScript | None, str | None]:
+    if COMMUNITY_READONLY:
+        return None, "Community scripts are read-only. Use Add to Script Hub to install them locally."
+
     from flx.script_hub import _extract_commands_from_code
 
     sid = script_id or uuid.uuid4().hex[:12]
@@ -270,6 +222,8 @@ def save_community_script(
 
 
 def delete_community_script(script_id: str) -> bool:
+    if COMMUNITY_READONLY:
+        return False
     manifest = _load_manifest()
     new_manifest = [s for s in manifest if s.get("id") != script_id]
     if len(new_manifest) == len(manifest):

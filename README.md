@@ -2,7 +2,7 @@
 
 Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://web.fluxer.app), with a **web dashboard** and **FlxScript** hub (personal + community scripts).
 
-**Current version:** 1.0.6
+**Current version:** 1.0.7
 
 ## Downloads
 

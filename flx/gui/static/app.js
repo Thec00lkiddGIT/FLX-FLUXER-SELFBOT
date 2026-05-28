@@ -7,6 +7,7 @@ let hubTab = "mine";
 let hubSearchQuery = "";
 let hubDirty = false;
 let hubSavedSnapshot = "";
+let communityReadonly = true;
 
 function el(id) {
   return document.getElementById(id);
@@ -156,7 +157,7 @@ function applyStatus(s) {
   el("display-name").textContent = name;
   el("profile-name").textContent = name;
   el("profile-handle").textContent = "@" + (s.handle || "fluxer");
-  el("version").textContent = "v" + (s.version || "1.0.6");
+  el("version").textContent = "v" + (s.version || "1.0.7");
   el("user-id").textContent = String(s.user_id ?? "-");
   el("api-url").textContent = s.api_url || "-";
   if (el("prefix-display")) el("prefix-display").textContent = s.prefix || "!";
@@ -316,9 +317,33 @@ function markHubSaved() {
 }
 
 function markHubDirty() {
+  if (hubTab === "community" && communityReadonly) return;
   if (hubEditorSnapshot() === hubSavedSnapshot) return;
   hubDirty = true;
   el("hub-unsaved")?.classList.remove("hidden");
+}
+
+function setCommunityEditorReadonly(readonly) {
+  communityReadonly = readonly;
+  const ids = [
+    "script-name",
+    "script-author",
+    "script-description",
+    "script-usage",
+    "script-command",
+    "script-submitted-by",
+    "script-code",
+    "script-test-args",
+  ];
+  ids.forEach((id) => {
+    const node = el(id);
+    if (node) node.readOnly = readonly;
+  });
+  el("btn-script-test")?.classList.toggle("hidden", readonly && hubTab === "community");
+  if (readonly && hubTab === "community") {
+    hubDirty = false;
+    el("hub-unsaved")?.classList.add("hidden");
+  }
 }
 
 function setScriptStatus(msg, isError) {
@@ -409,7 +434,7 @@ function renderHubList() {
   const scripts = filteredHubScripts(all);
   if (countNode) countNode.textContent = String(all.length);
 
-  const emptyMine = "No scripts yet. Click New script.";
+  const emptyMine = "No scripts installed. Use Community -> Add to Script Hub, or New script.";
   const emptyCommunity = "No community scripts yet.";
   const emptySearch = "No scripts match your search.";
 
@@ -459,14 +484,12 @@ function setHubTab(tab) {
   el("hub-list-title").textContent = hubTab === "community" ? "Community" : "My scripts";
   el("community-tab-hint")?.classList.toggle("hidden", hubTab !== "community");
   el("btn-script-new")?.classList.toggle("hidden", hubTab !== "mine");
-  el("btn-community-new")?.classList.toggle("hidden", hubTab !== "community");
   el("btn-script-save")?.classList.toggle("hidden", hubTab !== "mine");
-  el("btn-community-save")?.classList.toggle("hidden", hubTab !== "community");
   el("btn-script-delete")?.classList.toggle("hidden", hubTab !== "mine");
-  el("btn-community-delete")?.classList.toggle("hidden", hubTab !== "community");
   el("btn-community-import")?.classList.toggle("hidden", hubTab !== "community");
   el("script-submitted-wrap")?.classList.toggle("hidden", hubTab !== "community");
   el("hub-enable-wrap")?.classList.toggle("hidden", hubTab === "community");
+  setCommunityEditorReadonly(hubTab === "community" && communityReadonly);
   renderHubList();
   const scripts = currentHubList();
   if (scripts.length) {
@@ -508,6 +531,7 @@ async function refreshCommunityScripts() {
   try {
     const data = await api("/api/community/scripts");
     communityScripts = data.scripts || [];
+    if (data.readonly !== undefined) setCommunityEditorReadonly(!!data.readonly);
     if (hubTab === "community") {
       renderHubList();
       if (activeScriptId) {
@@ -589,8 +613,7 @@ function setupScriptHub() {
       const page = document.querySelector("#page-scripts.active");
       if (!page) return;
       e.preventDefault();
-      if (hubTab === "community") el("btn-community-save")?.click();
-      else el("btn-script-save")?.click();
+      if (hubTab !== "community") el("btn-script-save")?.click();
     }
   });
 
@@ -660,43 +683,6 @@ function setupScriptHub() {
     }
   });
 
-  el("btn-community-new")?.addEventListener("click", async () => {
-    try {
-      const tpl = await api(
-        "/api/scripts/template?name=Community+Script&author=c00lkiddtech&command=communitycmd"
-      );
-      activeScriptId = "";
-      loadScriptIntoEditor({ ...tpl, submitted_by: "" });
-      renderHubList();
-      setScriptStatus("New community script - edit and publish.");
-    } catch (_) {
-      setScriptStatus("Could not load template.", true);
-    }
-  });
-
-  el("btn-community-save")?.addEventListener("click", async () => {
-    try {
-      const data = await postCommunity({
-        action: "save",
-        id: activeScriptId || undefined,
-        name: el("script-name").value,
-        author: el("script-author").value,
-        description: el("script-description").value,
-        usage: el("script-usage").value,
-        command: el("script-command").value,
-        help: el("script-description").value,
-        code: el("script-code").value,
-        submitted_by: el("script-submitted-by")?.value || "",
-      });
-      activeScriptId = data.script?.id || activeScriptId;
-      markHubSaved();
-      setScriptStatus("Published to community.");
-      await refreshCommunityScripts();
-    } catch (err) {
-      setScriptStatus(err.message || String(err), true);
-    }
-  });
-
   el("btn-community-import")?.addEventListener("click", async () => {
     if (!activeScriptId) {
       setScriptStatus("Pick a community script first.", true);
@@ -707,31 +693,6 @@ function setupScriptHub() {
       setScriptStatus("Added to your Script Hub.");
       await refreshScripts();
       setHubTab("mine");
-    } catch (err) {
-      setScriptStatus(err.message || String(err), true);
-    }
-  });
-
-  el("btn-community-delete")?.addEventListener("click", async () => {
-    if (!activeScriptId) {
-      setScriptStatus("Pick a script to remove.", true);
-      return;
-    }
-    if (!confirm("Remove this script from the community hub?")) return;
-    try {
-      await postCommunity({ action: "delete", id: activeScriptId });
-      activeScriptId = "";
-      loadScriptIntoEditor({
-        name: "",
-        author: "c00lkiddtech",
-        command: "",
-        description: "",
-        usage: "",
-        code: "",
-        submitted_by: "",
-      });
-      setScriptStatus("Removed from community.");
-      await refreshCommunityScripts();
     } catch (err) {
       setScriptStatus(err.message || String(err), true);
     }

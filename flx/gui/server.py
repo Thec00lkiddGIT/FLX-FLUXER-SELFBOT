@@ -14,6 +14,7 @@ from flx.gui.commands_list import COMMANDS
 from flx.paths import app_support_dir, ensure_env_file, open_env_in_editor
 from flx.runtime import get_runtime
 from flx.community_hub import (
+    COMMUNITY_READONLY,
     community_script_dict,
     delete_community_script,
     import_community_to_hub,
@@ -45,7 +46,7 @@ def _json_response(handler: BaseHTTPRequestHandler, code: int, payload: object) 
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "FLX/1.0.6"
+    server_version = "FLX/1.0.7"
 
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -99,7 +100,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if path == "/api/community/scripts":
             scripts = [community_script_dict(s) for s in list_community_scripts()]
-            _json_response(self, 200, {"scripts": scripts})
+            _json_response(
+                self,
+                200,
+                {"scripts": scripts, "readonly": COMMUNITY_READONLY},
+            )
             return
 
         if path == "/api/scripts/template":
@@ -206,6 +211,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if path == "/api/community/scripts":
             action = data.get("action", "save")
+            if action in ("save", "delete") and COMMUNITY_READONLY:
+                _json_response(
+                    self,
+                    403,
+                    {
+                        "ok": False,
+                        "error": "Community scripts are read-only. Install them to My scripts instead.",
+                    },
+                )
+                return
             if action == "save":
                 script, err = save_community_script(
                     script_id=data.get("id") or None,

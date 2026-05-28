@@ -126,51 +126,35 @@ def _copy_bundled_tree(bundled: Path, hub: Path) -> None:
             shutil.copy2(item, dest)
 
 
-def _merge_bundled_scripts(hub: Path, bundled: Path) -> None:
+def _sync_personal_hub(hub: Path, bundled: Path | None) -> None:
+    """Personal Script Hub is bundled-only (empty by default). Drops user-added scripts."""
     manifest = hub / "manifest.json"
-    user_scripts = _read_hub_manifest(manifest)
-    user_ids = {str(s.get("id")) for s in user_scripts if s.get("id")}
-    user_commands = _hub_commands(user_scripts)
-
-    bundled_scripts = _read_hub_manifest(bundled / "manifest.json")
-    if not bundled_scripts:
-        return
-
-    added = False
-    for entry in bundled_scripts:
-        sid = str(entry.get("id") or "").strip()
-        if not sid or sid in user_ids:
-            continue
-        cmds = _hub_commands([entry])
-        if cmds & user_commands:
-            continue
-        src = bundled / f"{sid}.py"
-        if not src.is_file():
-            continue
-        shutil.copy2(src, hub / f"{sid}.py")
-        user_scripts.append(entry)
-        user_ids.add(sid)
-        user_commands |= cmds
-        added = True
-
-    if added or not manifest.is_file():
-        _write_hub_manifest(manifest, user_scripts)
+    scripts: list[dict] = []
+    allowed_ids: set[str] = set()
+    if bundled and bundled.is_dir():
+        scripts = _read_hub_manifest(bundled / "manifest.json")
+        for entry in scripts:
+            sid = str(entry.get("id") or "").strip()
+            if not sid:
+                continue
+            src = bundled / f"{sid}.py"
+            if src.is_file():
+                shutil.copy2(src, hub / f"{sid}.py")
+                allowed_ids.add(sid)
+    for py in hub.glob("*.py"):
+        if py.stem not in allowed_ids:
+            py.unlink(missing_ok=True)
+    _write_hub_manifest(manifest, scripts)
 
 
 def ensure_script_hub() -> Path:
     hub = hub_dir()
     hub.mkdir(parents=True, exist_ok=True)
     (hub / "json").mkdir(parents=True, exist_ok=True)
-    manifest = hub / "manifest.json"
     bundled = bundled_hub_dir()
-
-    if not manifest.is_file():
-        if bundled:
-            _copy_bundled_tree(bundled, hub)
-        else:
-            _write_hub_manifest(manifest, [])
-    elif bundled:
-        _merge_bundled_scripts(hub, bundled)
+    if bundled and not (hub / "manifest.json").is_file():
+        _copy_bundled_tree(bundled, hub)
+    _sync_personal_hub(hub, bundled)
 
     return hub
 
