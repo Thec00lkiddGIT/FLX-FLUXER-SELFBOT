@@ -108,12 +108,13 @@ jobs:
           chmod +x dist/FLX-FLUXER-SELFBOT/run-chromebook.sh
           cp assets/icon.png dist/FLX-FLUXER-SELFBOT/icon.png
           cd dist
-          zip -r FLX-FLUXER-SELFBOT-Chromebook-Linux.zip FLX-FLUXER-SELFBOT
+          zip -r FLX-FLUXER-SELFBOT-ChromeOS.zip FLX-FLUXER-SELFBOT
+          cp FLX-FLUXER-SELFBOT-ChromeOS.zip FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FLX-FLUXER-SELFBOT-Chromebook-Linux
-          path: dist/FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
+          name: FLX-FLUXER-SELFBOT-ChromeOS
+          path: dist/FLX-FLUXER-SELFBOT-ChromeOS.zip
 
   publish:
     needs: [build-macos, build-windows, build-linux]
@@ -131,7 +132,7 @@ jobs:
           files: |
             artifacts/FLX-FLUXER-SELFBOT-macOS/FLX-FLUXER-SELFBOT-macOS.zip
             artifacts/FLX-FLUXER-SELFBOT-Windows/FLX-FLUXER-SELFBOT-Windows.zip
-            artifacts/FLX-FLUXER-SELFBOT-Chromebook-Linux/FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
+            artifacts/FLX-FLUXER-SELFBOT-ChromeOS/FLX-FLUXER-SELFBOT-ChromeOS.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

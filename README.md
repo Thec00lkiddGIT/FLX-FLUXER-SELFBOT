@@ -10,7 +10,7 @@ Fluxer selfbot for [fluxer.app](https://fluxer.app) / [web.fluxer.app](https://w
 |----------|------|
 | **macOS** (Apple Silicon) | `FLX-FLUXER-SELFBOT-macOS.zip` -> open `FLX FLUXER SELFBOT.app` |
 | **Windows** | `FLX-FLUXER-SELFBOT-Windows.zip` -> run `FLX-FLUXER-SELFBOT.exe` |
-| **Chromebook / Linux** | `FLX-FLUXER-SELFBOT-Chromebook-Linux.zip` -> run `./run-chromebook.sh` |
+| **ChromeOS / Chromebook / Linux** | `FLX-FLUXER-SELFBOT-ChromeOS.zip` -> run `./run-chromebook.sh` |
 
 **Chromebook:** Turn on Linux (Crostini), unzip, run `./run-chromebook.sh`, open the URL in Chrome. Full guide: [docs/CHROMEBOOK.md](docs/CHROMEBOOK.md)
 

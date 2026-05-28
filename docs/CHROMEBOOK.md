@@ -15,7 +15,7 @@ Without the Linux development environment, you cannot run the selfbot locally. U
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip unzip
 cd ~
-wget -O flx.zip https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases/latest/download/FLX-FLUXER-SELFBOT-Chromebook-Linux.zip
+wget -O flx.zip https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases/latest/download/FLX-FLUXER-SELFBOT-ChromeOS.zip
 unzip flx.zip
 cd FLX-FLUXER-SELFBOT
 ./run-chromebook.sh

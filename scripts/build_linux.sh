@@ -21,9 +21,9 @@ chmod +x "$DIST/run-chromebook.sh"
 cp assets/icon.png "$DIST/icon.png" 2>/dev/null || true
 
 cd dist
-zip -r FLX-FLUXER-SELFBOT-Chromebook-Linux.zip FLX-FLUXER-SELFBOT
+zip -r FLX-FLUXER-SELFBOT-ChromeOS.zip FLX-FLUXER-SELFBOT
 echo ""
 echo "Done."
 echo "  Folder: dist/FLX-FLUXER-SELFBOT/"
-echo "  Zip:    dist/FLX-FLUXER-SELFBOT-Chromebook-Linux.zip"
+echo "  Zip:    dist/FLX-FLUXER-SELFBOT-ChromeOS.zip"
 echo "  Chromebook: unzip, then run ./run-chromebook.sh"
