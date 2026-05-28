@@ -9,6 +9,10 @@ from flx.config import command_prefix
 from flx.dadjoke import dadjoke_reply
 from flx.fluxerscript import CommandContext, FlxMessage
 from flx.glcheck import bulk_reply, check_reply
+from flx.httpcat import fetch_httpcat_image, httpcat_caption
+from flx.pokemon import pokemon_lookup
+from flx.microlink import screenshot_lookup
+from flx.poof import poof_from_message
 from flx.osint import credits_reply, search_reply
 from flx.qr import fetch_qr_png, format_qr_caption
 from flx.randomword import word_reply
@@ -86,6 +90,10 @@ COMMANDS: list[tuple[str, str]] = [
     ("echo", "Repeat your text"),
     ("status", "Set presence: online | idle | dnd | invisible"),
     ("purge", "Delete your recent messages in this channel"),
+    ("httpcat", "http.cat status image (e.g. 404)"),
+    ("pokemon", "PokéAPI lookup (name, id, or random)"),
+    ("poof", "Remove image background (attach image, Poof.bg)"),
+    ("screenshot", "Screenshot a URL (Microlink)"),
 ]
 
 
@@ -165,6 +173,78 @@ def dispatch_builtin(
             return BuiltinResult(replies=[str(exc)])
         except RuntimeError as exc:
             return _err("QR", exc)
+
+    if name == "httpcat":
+        code_s = args.strip()
+        if not code_s:
+            return BuiltinResult(
+                replies=[_usage("httpcat", "<status code>\nExample: `!httpcat 404`")]
+            )
+        try:
+            code = int(code_s)
+        except ValueError:
+            return BuiltinResult(replies=["Status code must be a number (100-599)."])
+        try:
+            image, filename = fetch_httpcat_image(code)
+            return BuiltinResult(
+                replies=[httpcat_caption(code)],
+                files=[(filename, image)],
+            )
+        except ValueError as exc:
+            return BuiltinResult(replies=[str(exc)])
+        except RuntimeError as exc:
+            return _err("httpcat", exc)
+
+    if name == "pokemon":
+        query = args.strip()
+        if not query:
+            return BuiltinResult(
+                replies=[
+                    _usage(
+                        "pokemon",
+                        "<name|id|random>\nExamples: `!pokemon pikachu` `!pokemon 25` `!pokemon random`",
+                    )
+                ]
+            )
+        try:
+            text, files = pokemon_lookup(query)
+            return BuiltinResult(replies=[text], files=files)
+        except ValueError as exc:
+            return BuiltinResult(replies=[str(exc)])
+        except RuntimeError as exc:
+            return _err("Pokémon", exc)
+
+    if name == "poof":
+        try:
+            text, files = poof_from_message(message, args, fluxer_token=rest.token)
+            return BuiltinResult(replies=[text], files=files)
+        except ValueError as exc:
+            return BuiltinResult(
+                replies=[
+                    str(exc),
+                    _usage(
+                        "poof",
+                        "(attach image) [format=png] [channels=rgba] [bg_color=#fff] [size=full] [crop=true]",
+                    ),
+                ]
+            )
+        except RuntimeError as exc:
+            return _err("Poof", exc)
+
+    if name == "screenshot":
+        if not args.strip():
+            return BuiltinResult(
+                replies=[
+                    _usage("screenshot", "<url>\nExample: `!screenshot https://fluxer.app`")
+                ]
+            )
+        try:
+            text, files = screenshot_lookup(args.strip())
+            return BuiltinResult(replies=[text], files=files)
+        except ValueError as exc:
+            return BuiltinResult(replies=[str(exc)])
+        except RuntimeError as exc:
+            return _err("Screenshot", exc)
 
     if name == "youtube":
         parts = args.split(None, 1)

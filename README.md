@@ -58,6 +58,12 @@ Full guide: [docs/FLXSCRIPT_GUIDE.md](docs/FLXSCRIPT_GUIDE.md)
 | `!echo` | Repeat text |
 | `!status` | Set presence |
 | `!purge [n]` | Delete your recent messages |
+| `!httpcat <code>` | Post an http.cat status image |
+| `!pokemon <name\|id\|random>` | Pokemon sprite and stats (PokeAPI) |
+| `!poof` | Remove image background (reply with image; needs `POOF_API_KEY`) |
+| `!screenshot <url>` | Screenshot a URL (Microlink) |
+
+Outgoing messages wait and retry on channel slowmode / rate limits automatically.
 
 Abuse / mod / troll commands require enabling **abuse mode** in the GUI (`!abuse`).
 
@@ -74,6 +80,7 @@ Abuse / mod / troll commands require enabling **abuse mode** in the GUI (`!abuse
 | `FLUXER_TOKEN` | (required) |
 | `FLUXER_API_URL` | `https://api.fluxer.app` |
 | `PREFIX` | `!` |
+| `POOF_API_KEY` | (optional, for `!poof`) |
 
 ## Project layout
 

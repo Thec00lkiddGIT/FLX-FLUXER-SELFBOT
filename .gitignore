@@ -1,5 +1,6 @@
 node_modules/
 dist/
+build/flx/
 build/pyinstaller/
 .venv/
 .venv-build/

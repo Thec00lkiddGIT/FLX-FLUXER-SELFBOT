@@ -80,3 +80,7 @@ def api_ninjas_key() -> str:
 
 def osint_api_key() -> str:
     return _require("OSINT_INDUSTRIES_KEY")
+
+
+def poof_api_key() -> str:
+    return _require("POOF_API_KEY")

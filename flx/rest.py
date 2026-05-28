@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
 
+from flx.rate_limit import urlopen_with_rate_limit
 from flx.textutil import MAX_MESSAGE_LENGTH, split_message_content
+
+# Small gap between multi-part messages in the same channel.
+CHUNK_SEND_GAP_SECONDS = 0.35
 
 
 class FluxerREST:
@@ -23,6 +29,19 @@ class FluxerREST:
         if not base.endswith("/v1"):
             base = f"{base}/v1"
         self.base = base
+        self._channel_locks_guard = threading.Lock()
+        self._channel_send_locks: dict[str, threading.Lock] = {}
+
+    def _channel_send_lock(self, channel_id: str) -> threading.Lock:
+        with self._channel_locks_guard:
+            lock = self._channel_send_locks.get(channel_id)
+            if lock is None:
+                lock = threading.Lock()
+                self._channel_send_locks[channel_id] = lock
+            return lock
+
+    def _open(self, req: urllib.request.Request, *, timeout: float = 30) -> object:
+        return urlopen_with_rate_limit(req, timeout=timeout)
 
     def _request(
         self,
@@ -45,7 +64,7 @@ class FluxerREST:
             headers["Content-Type"] = "application/json"
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with self._open(req, timeout=30) as resp:
                 raw = resp.read()
                 if not raw:
                     return None
@@ -53,6 +72,8 @@ class FluxerREST:
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
+        except RuntimeError:
+            raise
 
     def get_me(self) -> dict:
         return self._request("GET", "/users/@me")
@@ -150,13 +171,9 @@ class FluxerREST:
                 },
                 method="POST",
             )
-            try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
-                    raw = resp.read()
-                    return json.loads(raw.decode("utf-8")) if raw else {}
-            except urllib.error.HTTPError as exc:
-                detail = exc.read().decode("utf-8", errors="replace")
-                raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
+            with self._open(req, timeout=60) as resp:
+                raw = resp.read()
+                return json.loads(raw.decode("utf-8")) if raw else {}
 
         payload = self._message_payload(
             content,
@@ -183,14 +200,17 @@ class FluxerREST:
                 return {}
 
         last: dict = {}
-        for index, chunk in enumerate(chunks):
-            last = self._send_message_once(
-                channel_id,
-                chunk,
-                reply_to=reply_to if index == 0 else None,
-                guild_id=guild_id,
-                files=files if index == 0 else None,
-            )
+        with self._channel_send_lock(channel_id):
+            for index, chunk in enumerate(chunks):
+                last = self._send_message_once(
+                    channel_id,
+                    chunk,
+                    reply_to=reply_to if index == 0 else None,
+                    guild_id=guild_id,
+                    files=files if index == 0 else None,
+                )
+                if index < len(chunks) - 1 and CHUNK_SEND_GAP_SECONDS > 0:
+                    time.sleep(CHUNK_SEND_GAP_SECONDS)
         return last
 
     def edit_message(self, channel_id: str, message_id: str, content: str) -> dict:

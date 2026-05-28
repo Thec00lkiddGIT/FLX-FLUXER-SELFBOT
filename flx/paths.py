@@ -23,6 +23,9 @@ GLSERIES_BASE_URL=https://live.glseries.net/api/v1
 API_NINJAS_KEY=
 SERPAPI_KEY=
 OSINT_INDUSTRIES_KEY=
+
+# Poof.bg (!poof) - https://docs.poof.bg
+POOF_API_KEY=
 """
 
 
