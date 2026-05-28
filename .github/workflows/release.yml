@@ -129,7 +129,11 @@ jobs:
         id: notes
         run: |
           TAG="${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}"
-          BODY="$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null | sed '/^$/d' | head -1)"
+          git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}" --force 2>/dev/null || true
+          BODY="$(git tag -l --format='%(contents:subject)' "$TAG" 2>/dev/null | head -1)"
+          if [ -z "$BODY" ] || [ "$BODY" = "$TAG" ]; then
+            BODY="$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null | sed '/^$/d' | head -1)"
+          fi
           if [ -z "$BODY" ]; then
             BODY="Update for $TAG"
           fi
