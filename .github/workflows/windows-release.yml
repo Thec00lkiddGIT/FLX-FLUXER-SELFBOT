@@ -20,6 +20,7 @@ jobs:
         run: |
           python -m pip install -U pip
           pip install -r requirements.txt -r requirements-build.txt
+          python scripts/prepare_icons.py
 
       - name: Build Windows app
         run: pyinstaller build/flx.spec --clean --noconfirm

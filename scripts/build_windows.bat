@@ -9,6 +9,7 @@ if not exist .venv-build (
 call .venv-build\Scripts\activate.bat
 python -m pip install -q -U pip
 pip install -q -r requirements.txt -r requirements-build.txt
+python scripts\prepare_icons.py
 pyinstaller build\flx.spec --clean --noconfirm
 powershell -NoProfile -Command "Compress-Archive -Path 'dist\FLX-FLUXER-SELFBOT' -DestinationPath 'dist\FLX-FLUXER-SELFBOT-Windows.zip' -Force"
 

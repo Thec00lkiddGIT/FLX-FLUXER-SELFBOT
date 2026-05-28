@@ -11,6 +11,7 @@ fi
 source .venv-build/bin/activate
 pip install -q -U pip
 pip install -q -r requirements.txt -r requirements-build.txt
+python scripts/prepare_icons.py
 pyinstaller build/flx.spec --clean --noconfirm
 cd dist
 ditto -c -k --sequesterRsrc --keepParent "FLX FLUXER SELFBOT.app" FLX-FLUXER-SELFBOT-macOS.zip

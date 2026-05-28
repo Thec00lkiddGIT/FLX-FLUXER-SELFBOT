@@ -9,6 +9,9 @@ ROOT = Path(SPECPATH)
 if not (ROOT / "gui.py").is_file():
     ROOT = ROOT.parent
 
+ICON_ICO = ROOT / "assets" / "icon.ico"
+ICON_ICNS = ROOT / "assets" / "icon.icns"
+
 block_cipher = None
 
 datas = [
@@ -65,6 +68,8 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+_exe_icon = str(ICON_ICO) if sys.platform == "win32" and ICON_ICO.is_file() else None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -81,6 +86,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=_exe_icon,
 )
 
 coll = COLLECT(
@@ -98,6 +104,6 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="FLX FLUXER SELFBOT.app",
-        icon=None,
+        icon=str(ICON_ICNS) if ICON_ICNS.is_file() else None,
         bundle_identifier="app.fluxer.flx.selfbot",
     )
