@@ -305,7 +305,12 @@ def dispatch_utility(
             return _usage(prefix, "copycat", "ON|OFF <@user>")
         mode, target = parts[0].upper(), " ".join(parts[1:])
         try:
-            uid = resolve_target_user_id(message, target, rest)
+            uid = resolve_target_user_id(
+                target,
+                message,
+                rest,
+                empty_hint="Provide @user, user ID, or reply to their message.",
+            )
         except ValueError as exc:
             return BuiltinResult(replies=[str(exc)])
         if mode == "ON":
@@ -462,7 +467,12 @@ def dispatch_utility(
 
     if name == "usericon":
         try:
-            uid = resolve_target_user_id(message, args, rest)
+            uid = resolve_target_user_id(
+                args,
+                message,
+                rest,
+                empty_hint="Provide @user, user ID, or reply to their message.",
+            )
         except ValueError as exc:
             return BuiltinResult(replies=[str(exc)])
         user = rest.get_user(uid)
@@ -590,7 +600,16 @@ def dispatch_utility(
 
     if name == "dick":
         try:
-            uid = resolve_target_user_id(message, args, rest) if args.strip() else message.author_id
+            uid = (
+                resolve_target_user_id(
+                    args,
+                    message,
+                    rest,
+                    empty_hint="Provide @user, user ID, or reply to their message.",
+                )
+                if args.strip()
+                else message.author_id
+            )
         except ValueError as exc:
             return BuiltinResult(replies=[str(exc)])
         inches = random.randint(1, 12)
