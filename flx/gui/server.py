@@ -21,7 +21,9 @@ from flx.community_hub import (
     list_community_scripts,
     save_community_script,
 )
+from flx.assistant import build_messages, chat_completion, ollama_status
 from flx.script_hub import (
+    create_script,
     delete_script,
     list_scripts,
     new_script_template,
@@ -149,6 +151,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             )
             return
 
+        if path == "/api/assistant/status":
+            _json_response(self, 200, ollama_status())
+            return
+
         if path == "/api/events":
             qs = parse_qs(parsed.query)
             after = int(qs.get("after", ["0"])[0])
@@ -178,8 +184,52 @@ class DashboardHandler(BaseHTTPRequestHandler):
             _json_response(self, 400, {"ok": False, "error": "invalid json"})
             return
 
+        if path == "/api/assistant/pull":
+            from flx.config import ollama_model
+            from flx.ollama_runtime import pull_model_via_api
+
+            model = ollama_model()
+            ok = pull_model_via_api(model)
+            _json_response(self, 200, {"ok": ok, "model": model, "ready": ok})
+            return
+
+        if path == "/api/assistant/chat":
+            user_message = str(data.get("message", "")).strip()
+            if not user_message:
+                _json_response(self, 400, {"ok": False, "error": "Message is empty."})
+                return
+            history = data.get("history") or []
+            if not isinstance(history, list):
+                history = []
+            try:
+                messages = build_messages(history, user_message)
+                result = chat_completion(messages)
+            except RuntimeError as exc:
+                _json_response(self, 400, {"ok": False, "error": str(exc)})
+                return
+            except OSError as exc:
+                _json_response(self, 400, {"ok": False, "error": str(exc)})
+                return
+            _json_response(self, 200, {"ok": True, **result})
+            return
+
         if path == "/api/scripts":
             action = data.get("action", "save")
+            if action == "create":
+                script, err = create_script(
+                    name=str(data.get("name", "My Script")),
+                    author=str(data.get("author", "Flx")),
+                    description=str(data.get("description", "") or data.get("help", "")),
+                    command=str(data.get("command", "mycommand")),
+                    code=str(data.get("code", "") or "") or None,
+                )
+                if err:
+                    _json_response(self, 400, {"ok": False, "error": err})
+                    return
+                item = script.to_dict() if script else {}
+                item["code"] = read_script_code(script.id) if script else ""
+                _json_response(self, 200, {"ok": True, "script": item})
+                return
             if action == "save":
                 script, err = save_script(
                     script_id=data.get("id") or None,

@@ -58,6 +58,15 @@ def command_prefix() -> str:
     return _env("PREFIX") or "!"
 
 
+def ollama_base_url() -> str:
+    url = _env("OLLAMA_BASE_URL") or "http://127.0.0.1:11434"
+    return url.rstrip("/")
+
+
+def ollama_model() -> str:
+    return _env("OLLAMA_MODEL") or "llama3.2"
+
+
 def set_command_prefix(new_prefix: str) -> str:
     """Update PREFIX in config.env and the current process."""
     prefix = new_prefix.strip()

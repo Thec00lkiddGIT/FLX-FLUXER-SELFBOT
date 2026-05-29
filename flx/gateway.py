@@ -146,7 +146,7 @@ class GatewayWorker:
                                 "MESSAGE_CREATE",
                                 "MESSAGE_REACTION_ADD",
                             ):
-                                self.on_event(event, data)
+                                await asyncio.to_thread(self.on_event, event, data)
             except asyncio.CancelledError:
                 break
             except Exception as exc:  # noqa: BLE001

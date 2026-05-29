@@ -7,7 +7,9 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
+
+T = TypeVar("T")
 
 from flx.paths import ensure_script_hub
 
@@ -62,20 +64,51 @@ def updateConfigData(key: str, value: Any) -> None:
     _save_config_file(all_cfg)
 
 
+def _embed_color_note(color: int | str | None) -> str:
+    if color is None:
+        return ""
+    if isinstance(color, int):
+        return f"#{color & 0xFFFFFF:06X}"
+    text = str(color).strip()
+    if not text:
+        return ""
+    if text.isdigit():
+        return f"#{int(text) & 0xFFFFFF:06X}"
+    return text if text.startswith("#") else f"#{text.lstrip('#')}"
+
+
 def forwardEmbedMethod(
     *,
-    content: str,
+    content: str = "",
     title: str | None = None,
     image: str | None = None,
     channel_id: str | None = None,
+    color: int | str | None = None,
+    description: str | None = None,
+    footer: str | None = None,
+    thumbnail: str | None = None,
+    **_: Any,
 ) -> str:
     """Rich embed-style text (Fluxer supports embeds via API; this formats plain content)."""
+    del channel_id  # reserved for future API embed sends
+    body = (content or description or "").strip()
     lines: list[str] = []
     if title:
         lines.extend(["**" + title + "**", ""])
-    lines.append(content)
-    if image:
+    if body:
+        lines.append(body)
+    thumb = thumbnail or image
+    if thumb:
+        lines.extend(["", str(thumb)])
+    if image and image != thumb:
         lines.extend(["", str(image)])
+    if footer:
+        lines.extend(["", f"_{footer}_"])
+    color_tag = _embed_color_note(color)
+    if color_tag and not footer:
+        lines.extend(["", f"_{color_tag}_"])
+    elif color_tag and footer:
+        lines[-1] = f"_{footer} · {color_tag}_"
     return "\n".join(lines).strip()
 
 
@@ -147,11 +180,27 @@ class CommandContext:
     def reply_embed(
         self,
         *,
-        content: str,
+        content: str = "",
         title: str | None = None,
         image: str | None = None,
+        color: int | str | None = None,
+        description: str | None = None,
+        footer: str | None = None,
+        thumbnail: str | None = None,
+        **kwargs: Any,
     ) -> None:
-        self.send(forwardEmbedMethod(content=content, title=title, image=image))
+        self.send(
+            forwardEmbedMethod(
+                content=content,
+                title=title,
+                image=image,
+                color=color,
+                description=description,
+                footer=footer,
+                thumbnail=thumbnail,
+                **kwargs,
+            )
+        )
 
     @property
     def replies(self) -> list[str]:
@@ -180,12 +229,135 @@ class ScriptMeta:
     usage: str
 
 
+def _api_dual(method: Callable[..., T]) -> Callable[..., T | Any]:
+    """Sync call returns data; inside async handlers returns an awaitable coroutine."""
+
+    def wrapper(self: ScriptBot, *args: Any, **kwargs: Any) -> T | Any:
+        def sync_call() -> T:
+            return method(self, *args, **kwargs)
+
+        async def async_call() -> T:
+            import asyncio
+
+            return await asyncio.to_thread(sync_call)
+
+        try:
+            import asyncio
+
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return sync_call()
+        return async_call()
+
+    return wrapper  # type: ignore[return-value]
+
+
 class ScriptBot:
     def __init__(self, script_id: str) -> None:
         self.script_id = script_id
         self.commands: dict[str, CommandSpec] = {}
         self.listeners: dict[str, Callable[..., Any]] = {}
         self.meta: ScriptMeta | None = None
+
+    def rest(self) -> Any:
+        """Fluxer REST client (requires bot running on the dashboard)."""
+        from flx.rest import FluxerREST
+        from flx.runtime import get_runtime
+
+        client = get_runtime().rest_client()
+        if client is None:
+            raise RuntimeError(
+                "FLX is not connected — click Start bot on the dashboard, then run your command again."
+            )
+        return client
+
+    @_api_dual
+    def get_guild(self, guild_id: str) -> dict:
+        return self.rest().get_guild(str(guild_id))
+
+    @_api_dual
+    def get_guild_channels(self, guild_id: str) -> list[dict]:
+        return self.rest().list_guild_channels(str(guild_id))
+
+    @_api_dual
+    def list_guild_channels(self, guild_id: str) -> list[dict]:
+        return self.rest().list_guild_channels(str(guild_id))
+
+    @_api_dual
+    def get_guild_members(
+        self,
+        guild_id: str,
+        *,
+        limit: int = 1000,
+        after: str | None = None,
+    ) -> list[dict]:
+        return self.rest().list_guild_members(
+            str(guild_id),
+            limit=limit,
+            after=after,
+        )
+
+    @_api_dual
+    def list_guild_members(
+        self,
+        guild_id: str,
+        *,
+        limit: int = 1000,
+        after: str | None = None,
+    ) -> list[dict]:
+        return self.rest().list_guild_members(
+            str(guild_id),
+            limit=limit,
+            after=after,
+        )
+
+    @_api_dual
+    def send_message(
+        self,
+        channel_id: str,
+        content: str,
+        *,
+        reply_to: str | None = None,
+        guild_id: str | None = None,
+    ) -> dict:
+        return self.rest().send_message(
+            str(channel_id),
+            content,
+            reply_to=reply_to,
+            guild_id=guild_id,
+        )
+
+    @_api_dual
+    def get_user(self, user_id: str) -> dict:
+        return self.rest().get_user(str(user_id))
+
+    @_api_dual
+    def get_channel_messages(
+        self,
+        channel_id: str,
+        *,
+        limit: int = 50,
+        before: str | None = None,
+    ) -> list[dict]:
+        return self.rest().list_channel_messages(
+            str(channel_id),
+            limit=limit,
+            before=before,
+        )
+
+    @_api_dual
+    def list_channel_messages(
+        self,
+        channel_id: str,
+        *,
+        limit: int = 50,
+        before: str | None = None,
+    ) -> list[dict]:
+        return self.rest().list_channel_messages(
+            str(channel_id),
+            limit=limit,
+            before=before,
+        )
 
     def command(
         self,

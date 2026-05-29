@@ -33,6 +33,9 @@ jobs:
           pip install -r requirements.txt -r requirements-build.txt
           python scripts/prepare_icons.py
 
+      - name: Bundle Ollama twin (FLX Assistant)
+        run: bash scripts/fetch_ollama_mac.sh
+
       - name: Build macOS app
         run: pyinstaller build/flx.spec --clean --noconfirm
 

@@ -157,7 +157,7 @@ function applyStatus(s) {
   el("display-name").textContent = name;
   el("profile-name").textContent = name;
   el("profile-handle").textContent = "@" + (s.handle || "fluxer");
-  el("version").textContent = "v" + (s.version || "1.0.9");
+  el("version").textContent = "v" + (s.version || "1.1.2");
   el("user-id").textContent = String(s.user_id ?? "-");
   el("api-url").textContent = s.api_url || "-";
   if (el("prefix-display")) el("prefix-display").textContent = s.prefix || "!";
@@ -747,13 +747,25 @@ function setupScriptHub() {
 
   el("btn-script-new")?.addEventListener("click", async () => {
     try {
-      const tpl = await api("/api/scripts/template?name=My+Script");
-      activeScriptId = "";
-      loadScriptIntoEditor(tpl);
+      const data = await postScript({
+        action: "create",
+        name: "My Script",
+        author: "Flx",
+        command: "mycommand",
+        description: "My custom command",
+      });
+      const script = data.script;
+      if (!script?.id) {
+        throw new Error("Script was created but no id came back.");
+      }
+      activeScriptId = script.id;
+      loadScriptIntoEditor(script);
+      markHubSaved();
       renderHubList();
-      setScriptStatus("Fresh script — edit it, then save.");
-    } catch (_) {
-      setScriptStatus("Couldn't load the starter template.", true);
+      await refreshScripts({ keepId: script.id });
+      setScriptStatus(`Created ${script.id}.py — edit and save anytime.`);
+    } catch (err) {
+      setScriptStatus(err.message || "Couldn't create script.", true);
     }
   });
 
@@ -885,8 +897,178 @@ function setupScriptHub() {
   setHubTab("mine");
 }
 
+let assistantHistory = [];
+let pendingAssistantCode = null;
+let pendingAssistantMeta = null;
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatAssistantReply(text) {
+  const parts = [];
+  const re = /```(?:python)?\s*\n([\s\S]*?)```/gi;
+  let last = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) {
+      parts.push({ type: "text", value: text.slice(last, m.index) });
+    }
+    parts.push({ type: "code", value: m[1].trim() });
+    last = re.lastIndex;
+  }
+  if (last < text.length) {
+    parts.push({ type: "text", value: text.slice(last) });
+  }
+  if (!parts.length) {
+    parts.push({ type: "text", value: text });
+  }
+  return parts
+    .map((p) => {
+      if (p.type === "code") {
+        return `<pre><code>${escapeHtml(p.value)}</code></pre>`;
+      }
+      const t = escapeHtml(p.value).replace(/\n/g, "<br>");
+      return `<p>${t}</p>`;
+    })
+    .join("");
+}
+
+function appendAssistantMessage(role, content, html) {
+  const box = el("assistant-messages");
+  if (!box) return;
+  const div = document.createElement("div");
+  div.className =
+    "assistant-msg " + (role === "user" ? "assistant-msg-user" : "assistant-msg-bot");
+  if (html) {
+    div.innerHTML = html;
+  } else {
+    const p = document.createElement("p");
+    p.textContent = content;
+    div.appendChild(p);
+  }
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function refreshAssistantStatus() {
+  const dot = el("assistant-dot");
+  const text = el("assistant-status-text");
+  try {
+    const st = await api("/api/assistant/status");
+    if (st.ok) {
+      dot?.classList.add("ok");
+      dot?.classList.remove("err");
+      const model = st.model || "llama";
+      const tag = st.bundled ? "bundled · " : "";
+      text.textContent = st.warning ? st.warning : `${tag}Ollama · ${model}`;
+    } else if (st.starting || st.bundled) {
+      dot?.classList.remove("ok");
+      dot?.classList.remove("err");
+      text.textContent = st.error || "Starting bundled Ollama…";
+    } else {
+      dot?.classList.add("err");
+      dot?.classList.remove("ok");
+      text.textContent = st.error || "Ollama offline";
+    }
+  } catch (err) {
+    dot?.classList.add("err");
+    text.textContent = err.message || "Status error";
+  }
+}
+
+async function sendAssistantMessage() {
+  const input = el("assistant-input");
+  const sendBtn = el("assistant-send");
+  const msg = (input?.value || "").trim();
+  if (!msg) return;
+  appendAssistantMessage("user", msg);
+  assistantHistory.push({ role: "user", content: msg });
+  if (input) input.value = "";
+  if (sendBtn) sendBtn.disabled = true;
+  try {
+    const data = await api("/api/assistant/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg, history: assistantHistory.slice(0, -1) }),
+    });
+    const reply = data.reply || "";
+    assistantHistory.push({ role: "assistant", content: reply });
+    appendAssistantMessage("assistant", reply, formatAssistantReply(reply));
+    if (data.script_code) {
+      pendingAssistantCode = data.script_code;
+      pendingAssistantMeta = data.script_meta || {};
+      el("assistant-script-bar")?.classList.remove("hidden");
+    }
+  } catch (err) {
+    appendAssistantMessage("assistant", err.message || String(err));
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+    input?.focus();
+  }
+}
+
+async function saveAssistantScript() {
+  if (!pendingAssistantCode) return;
+  const meta = pendingAssistantMeta || {};
+  try {
+    const saved = await postScript({
+      action: "save",
+      name: meta.name || "AI Script",
+      author: meta.author || "FLX Assistant",
+      description: meta.description || "Generated by FLX Assistant",
+      usage: meta.usage || "<p>mycommand <args>",
+      command: meta.command || "mycommand",
+      help: meta.description || "Generated by FLX Assistant",
+      code: pendingAssistantCode,
+      enabled: true,
+    });
+    appendAssistantMessage(
+      "assistant",
+      `Saved to Script Hub as "${saved.script?.name || meta.name}". Open My scripts to test it.`
+    );
+    await refreshScripts();
+  } catch (err) {
+    appendAssistantMessage("assistant", err.message || String(err));
+  }
+}
+
+function setupAssistant() {
+  el("assistant-send")?.addEventListener("click", () => sendAssistantMessage());
+  el("assistant-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendAssistantMessage();
+    }
+  });
+  el("assistant-clear")?.addEventListener("click", () => {
+    assistantHistory = [];
+    pendingAssistantCode = null;
+    pendingAssistantMeta = null;
+    el("assistant-script-bar")?.classList.add("hidden");
+    const box = el("assistant-messages");
+    if (box) {
+      box.innerHTML = "";
+      appendAssistantMessage(
+        "assistant",
+        "Chat cleared. Ask for a script or FLX / Fluxer help anytime."
+      );
+    }
+  });
+  el("assistant-save-script")?.addEventListener("click", () => saveAssistantScript());
+  el("assistant-open-scripts")?.addEventListener("click", () => {
+    document.querySelector('.nav-item[data-page="scripts"]')?.click();
+  });
+  refreshAssistantStatus();
+  setInterval(refreshAssistantStatus, 15000);
+}
+
 setupNav();
 setupControls();
+setupAssistant();
 setupScriptHub();
 refreshStatus();
 refreshScripts();

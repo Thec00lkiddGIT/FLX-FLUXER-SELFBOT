@@ -13,7 +13,7 @@
 >
 > Use the standard library plus FlxScript helpers. Put all docs and requirements in the script docstring.
 
-> **Embeds:** Fluxer supports rich embeds on the API. In FlxScript, use `forwardEmbedMethod()` for formatted text replies (works everywhere). For full API embeds, use `ctx.send()` with markdown or extend via REST in advanced scripts.
+> **Replies:** Use `ctx.send("...")` with normal markdown (`**bold**`, links, newlines) — same as bundled scripts (echo, httpcat, pokemon). `forwardEmbedMethod()` exists for legacy scripts but **new scripts should not use it**; FLX Assistant will not generate it.
 
 ## 2. Script structure
 
@@ -106,12 +106,21 @@ def command_handler(ctx, *, args: str):
 **`ctx` fields:**
 
 - `ctx.message` - `FlxMessage` (`content`, `channel_id`, `author_id`, …)
-- `ctx.send(text)` - queue a reply (Flx sends after the handler returns)
-- `ctx.reply_embed(content=..., title=..., image=...)` - formatted block via `forwardEmbedMethod`
+- `ctx.send(text)` - queue a reply (Flx sends after the handler returns) — **preferred for all new scripts**
+- `ctx.reply_embed(...)` - legacy; prefer `ctx.send()` with markdown instead
 
 **Delete command message:** enable **Delete command messages** on the dashboard, or call `ctx.request_delete_invocation()`.
 
 **Async handlers:** `async def` handlers are supported; use `await` only with async APIs you provide. `ctx.send()` is synchronous.
+
+**Guild / API helpers on `bot`** (bot must be **Running** on the dashboard):
+
+- `bot.get_guild_channels(guild_id)` / `bot.list_guild_channels(guild_id)` — use with or without `await` in `async def` handlers
+- `bot.get_guild_members(guild_id, limit=1000, after=None)`
+- `bot.get_guild(guild_id)`, `bot.get_user(user_id)`
+- `bot.get_channel_messages(channel_id, limit=50, before=None)`
+- `bot.send_message(channel_id, content, reply_to=None, guild_id=None)`
+- `bot.rest()` — raw `FluxerREST` client
 
 ### 4.4 Event listeners - `@bot.listen`
 
@@ -133,6 +142,9 @@ text = forwardEmbedMethod(
     content="Body **markdown** supported",
     title="Title",
     image="https://example.com/image.png",
+    color=0x3B82F6,  # or "#3B82F6" — shown as a subtle footer tag in plain text
+    footer="Optional footer",
+    description="Alias for content",
 )
 ctx.send(text)
 ```

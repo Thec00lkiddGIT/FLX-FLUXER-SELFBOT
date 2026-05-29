@@ -18,6 +18,16 @@ trap 'rm -rf "$STAGE"' EXIT
 ditto "$APP_PATH" "$STAGE/FLX.app"
 ln -s /Applications "$STAGE/Applications"
 
+OLLAMA_ZIP="$ROOT/scripts/ollama/Ollama-darwin.zip"
+OLLAMA_APP="$ROOT/scripts/ollama/Ollama.app"
+if [[ -f "$OLLAMA_ZIP" ]] && [[ ! -d "$OLLAMA_APP" ]]; then
+  unzip -q -o "$OLLAMA_ZIP" -d "$ROOT/scripts/ollama"
+fi
+if [[ -d "$OLLAMA_APP" ]]; then
+  ditto "$OLLAMA_APP" "$STAGE/Ollama.app"
+  echo "DMG includes Ollama.app (drag to Applications with FLX)"
+fi
+
 rm -f "dist/$DMG_NAME"
 hdiutil create \
   -volname "FLX" \

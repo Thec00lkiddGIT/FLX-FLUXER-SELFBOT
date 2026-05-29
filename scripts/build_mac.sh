@@ -5,6 +5,10 @@ cd "$(dirname "$0")/.."
 
 python3 -m pip install -q -r requirements.txt -r requirements-build.txt
 python3 scripts/prepare_icons.py
+if [[ ! -f scripts/ollama/Ollama-darwin.zip ]]; then
+  echo "Fetching Ollama zip for FLX twin (PyInstaller + DMG)…"
+  bash scripts/fetch_ollama_mac.sh
+fi
 pyinstaller build/flx.spec --clean --noconfirm
 
 cd dist

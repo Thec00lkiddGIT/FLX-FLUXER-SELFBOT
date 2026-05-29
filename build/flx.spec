@@ -20,7 +20,12 @@ datas = [
     (str(ROOT / "scripts" / "hub"), "scripts/hub"),
     (str(ROOT / "scripts" / "community"), "scripts/community"),
     (str(ROOT / ".env.example"), "."),
+    (str(ROOT / "docs" / "FLXSCRIPT_GUIDE.md"), "docs"),
 ]
+# Zip only — nesting Ollama.app in PyInstaller breaks codesign.
+_ollama_zip = ROOT / "scripts" / "ollama" / "Ollama-darwin.zip"
+if _ollama_zip.is_file():
+    datas.append((str(_ollama_zip), "ollama"))
 
 hiddenimports = [
     "flx",
@@ -40,6 +45,10 @@ hiddenimports = [
     "flx.textutil",
     "flx.script_hub",
     "flx.community_hub",
+    "flx.assistant",
+    "flx.ollama_runtime",
+    "flx.command_catalog",
+    "flx.utility_cmds",
     "flx.fluxerscript",
     "flx.snowflake",
     "flx.user_info",

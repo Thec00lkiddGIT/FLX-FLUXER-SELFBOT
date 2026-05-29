@@ -83,6 +83,10 @@ class BotRuntime:
                 )
             )
 
+    def rest_client(self) -> FluxerREST | None:
+        """Shared Fluxer REST client while the bot is running."""
+        return self._rest
+
     def settings(self) -> BotSettings:
         with self._lock:
             return BotSettings(**asdict(self._settings))
