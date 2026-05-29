@@ -58,6 +58,28 @@ def command_prefix() -> str:
     return _env("PREFIX") or "!"
 
 
+def set_command_prefix(new_prefix: str) -> str:
+    """Update PREFIX in config.env and the current process."""
+    prefix = new_prefix.strip()
+    if not prefix or len(prefix) > 8 or any(c.isspace() for c in prefix):
+        raise ValueError("Prefix must be 1–8 non-space characters.")
+    path = ensure_env_file()
+    lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    out: list[str] = []
+    found = False
+    for line in lines:
+        if line.strip().startswith("PREFIX="):
+            out.append(f"PREFIX={prefix}")
+            found = True
+        else:
+            out.append(line)
+    if not found:
+        out.append(f"PREFIX={prefix}")
+    path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+    os.environ["PREFIX"] = prefix
+    return prefix
+
+
 def weather_api_key() -> str:
     return _require("C99_WEATHER_KEY")
 

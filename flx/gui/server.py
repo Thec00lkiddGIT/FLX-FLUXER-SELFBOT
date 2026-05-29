@@ -9,8 +9,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from flx.config import config_env_path
-from flx.danger_cmds import DANGER_COMMANDS
-from flx.gui.commands_list import COMMANDS
+from flx.command_catalog import dashboard_command_rows
 from flx.paths import app_support_dir, ensure_env_file, open_env_in_editor
 from flx.runtime import get_runtime
 from flx.version import APP_VERSION
@@ -69,10 +68,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             st = rt.status()
             st["env_path"] = config_env_path()
             st["app_support"] = str(app_support_dir())
-            built_ins = [
-                {"name": n, "help": h, "source": "builtin"}
-                for n, h in (*COMMANDS, *DANGER_COMMANDS)
-            ]
+            built_ins = dashboard_command_rows()
             hub = []
             for s in list_scripts():
                 for cmd in s.commands or [s.command]:
@@ -91,6 +87,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/scripts":
+            qs = parse_qs(parsed.query)
+            one_id = (qs.get("id") or [""])[0].strip()
+            if one_id:
+                match = next((s for s in list_scripts() if s.id == one_id), None)
+                if match is None:
+                    _json_response(self, 404, {"ok": False, "error": "Script not found."})
+                    return
+                item = match.to_dict()
+                item["code"] = read_script_code(match.id)
+                _json_response(self, 200, {"ok": True, "script": item})
+                return
             scripts = []
             for s in list_scripts():
                 item = s.to_dict()
@@ -100,6 +107,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/community/scripts":
+            qs = parse_qs(parsed.query)
+            one_id = (qs.get("id") or [""])[0].strip()
+            if one_id:
+                match = next(
+                    (s for s in list_community_scripts() if s.id == one_id),
+                    None,
+                )
+                if match is None:
+                    _json_response(self, 404, {"ok": False, "error": "Script not found."})
+                    return
+                _json_response(
+                    self,
+                    200,
+                    {"ok": True, "script": community_script_dict(match)},
+                )
+                return
             scripts = [community_script_dict(s) for s in list_community_scripts()]
             _json_response(
                 self,
@@ -251,7 +274,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 _json_response(self, 200, {"ok": ok})
                 return
             if action == "import":
-                script, err = import_community_to_hub(str(data.get("id", "")))
+                script, err = import_community_to_hub(
+                    str(data.get("id", "")),
+                    code=str(data.get("code", "") or ""),
+                )
                 if err:
                     _json_response(self, 400, {"ok": False, "error": err})
                     return

@@ -285,6 +285,51 @@ class FluxerREST:
     def set_presence(self, status: str) -> None:
         self._request("PATCH", "/users/@me/settings", body={"status": status})
 
+    def set_activity(
+        self,
+        *,
+        status: str = "online",
+        activity_type: int | None = None,
+        activity_name: str | None = None,
+        clear: bool = False,
+    ) -> None:
+        body: dict[str, Any] = {"status": status}
+        if clear:
+            body["custom_status"] = None
+            body["activities"] = []
+        elif activity_name and activity_type is not None:
+            body["activities"] = [
+                {"type": activity_type, "name": activity_name[:128]},
+            ]
+        self._request("PATCH", "/users/@me/settings", body=body)
+
+    def get_guild(self, guild_id: str) -> dict:
+        result = self._request("GET", f"/guilds/{guild_id}")
+        return result if isinstance(result, dict) else {}
+
+    def patch_guild(self, guild_id: str, body: dict[str, Any]) -> dict:
+        result = self._request("PATCH", f"/guilds/{guild_id}", body=body)
+        return result if isinstance(result, dict) else {}
+
+    def list_guild_channels(self, guild_id: str) -> list[dict]:
+        result = self._request("GET", f"/guilds/{guild_id}/channels")
+        return result if isinstance(result, list) else []
+
+    def list_guild_members(
+        self,
+        guild_id: str,
+        *,
+        limit: int = 1000,
+        after: str | None = None,
+    ) -> list[dict]:
+        limit = max(1, min(int(limit), 1000))
+        params: dict[str, str] = {"limit": str(limit)}
+        if after:
+            params["after"] = after
+        query = urllib.parse.urlencode(params)
+        result = self._request("GET", f"/guilds/{guild_id}/members?{query}")
+        return result if isinstance(result, list) else []
+
     @staticmethod
     def _encode_emoji(emoji: str) -> str:
         return urllib.parse.quote(emoji, safe="")

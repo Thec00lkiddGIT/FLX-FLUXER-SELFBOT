@@ -29,9 +29,14 @@ def run_native_app(host: str = "127.0.0.1", port: int = 8766) -> None:
             "Missing pywebview. Install:\n\n  pip install pywebview websockets\n"
         ) from exc
 
+    import os
+
     from flx.gui.bootstrap import prepare_runtime
     from flx.gui.server import run_server
     from flx.runtime import get_runtime
+    from flx.utility_cmds import set_app_exit_callback
+
+    set_app_exit_callback(lambda: os._exit(0))
 
     server = run_server(host, port)
     url = f"http://{host}:{port}/"

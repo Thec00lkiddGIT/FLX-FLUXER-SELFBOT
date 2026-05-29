@@ -218,10 +218,16 @@ function applyStatus(s) {
     const p = s.prefix || "!";
     cmdList.innerHTML = s.commands
       .map((c) => {
-        const tag =
-          c.source === "hub"
-            ? `<span class="cmd-tag${c.enabled === false ? " off" : ""}">hub</span>`
-            : "";
+        let tag = "";
+        if (c.source === "hub") {
+          tag = `<span class="cmd-tag${c.enabled === false ? " off" : ""}">hub</span>`;
+        } else if (c.source === "mod") {
+          tag = `<span class="cmd-tag mod">mod</span>`;
+        } else if (c.source === "abuse") {
+          tag = `<span class="cmd-tag abuse">abuse</span>`;
+        } else if (c.source === "general") {
+          tag = `<span class="cmd-tag general">general</span>`;
+        }
         return `<li><div><code>${escapeHtml(p)}${escapeHtml(c.name)}</code><span class="muted">${escapeHtml(c.help)}</span></div>${tag}</li>`;
       })
       .join("");
@@ -332,13 +338,19 @@ function setCommunityEditorReadonly(readonly) {
     "script-usage",
     "script-command",
     "script-submitted-by",
-    "script-code",
     "script-test-args",
   ];
   ids.forEach((id) => {
     const node = el(id);
     if (node) node.readOnly = readonly;
   });
+  const codeEl = el("script-code");
+  if (codeEl) {
+    // WebKit/pywebview often hides textarea content when readOnly is set.
+    codeEl.readOnly = false;
+    codeEl.disabled = false;
+    codeEl.classList.toggle("hub-code-viewonly", readonly);
+  }
   el("btn-script-test")?.classList.toggle("hidden", readonly && hubTab === "community");
   if (readonly && hubTab === "community") {
     hubDirty = false;
@@ -379,7 +391,7 @@ function updateHubEditorChrome(script) {
   syncHubLineNumbers();
 }
 
-function loadScriptIntoEditor(script) {
+function applyScriptToEditorFields(script) {
   activeScriptId = script?.id || "";
   el("script-name").value = script?.name || "";
   el("script-author").value =
@@ -392,14 +404,80 @@ function loadScriptIntoEditor(script) {
   if (el("script-submitted-by")) {
     el("script-submitted-by").value = script?.submitted_by || "";
   }
-  el("script-code").value = script?.code || "";
+  const codeEl = el("script-code");
+  const body = script?.code || "";
+  if (hubTab === "community" && communityReadonly) {
+    setCommunityEditorReadonly(true);
+  } else {
+    setCommunityEditorReadonly(false);
+  }
+  if (codeEl) {
+    codeEl.value = body;
+    codeEl.scrollTop = 0;
+  }
   el("script-test-out").textContent = "";
   setScriptStatus("");
+  syncHubLineNumbers();
   markHubSaved();
   updateHubEditorChrome(script);
   document.querySelectorAll("#hub-script-list button").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.id === activeScriptId);
   });
+}
+
+function loadScriptIntoEditor(script) {
+  applyScriptToEditorFields(script);
+}
+
+async function fetchCommunityScriptById(scriptId) {
+  const data = await api(
+    `/api/community/scripts?id=${encodeURIComponent(scriptId)}`
+  );
+  return data.script || null;
+}
+
+async function fetchPersonalScriptById(scriptId) {
+  const data = await api(`/api/scripts?id=${encodeURIComponent(scriptId)}`);
+  return data.script || null;
+}
+
+async function loadCommunityScriptIntoEditor(script) {
+  if (!script?.id) {
+    loadScriptIntoEditor(script);
+    return;
+  }
+  let full = script;
+  try {
+    const loaded = await fetchCommunityScriptById(script.id);
+    if (loaded) {
+      full = { ...script, ...loaded };
+      const idx = communityScripts.findIndex((s) => s.id === script.id);
+      if (idx >= 0) communityScripts[idx] = { ...communityScripts[idx], ...full };
+    }
+  } catch (_) {
+    /* keep partial script */
+  }
+  applyScriptToEditorFields(full);
+  if (!(full.code || "").trim()) {
+    setScriptStatus("Couldn't load script source — try another script.", true);
+  }
+}
+
+async function loadPersonalScriptIntoEditor(script) {
+  if (!script?.id) {
+    loadScriptIntoEditor(script);
+    return;
+  }
+  let full = script;
+  if (!(full.code || "").trim()) {
+    try {
+      const loaded = await fetchPersonalScriptById(script.id);
+      if (loaded) full = { ...script, ...loaded };
+    } catch (_) {
+      /* keep partial */
+    }
+  }
+  applyScriptToEditorFields(full);
 }
 
 function filteredHubScripts(scripts) {
@@ -468,7 +546,9 @@ function renderHubList() {
   list.querySelectorAll("button[data-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const script = all.find((s) => s.id === btn.dataset.id);
-      if (script) loadScriptIntoEditor(script);
+      if (!script) return;
+      if (hubTab === "community") loadCommunityScriptIntoEditor(script);
+      else loadPersonalScriptIntoEditor(script);
     });
   });
 }
@@ -488,7 +568,6 @@ function applyHubTabChrome(tab) {
   el("btn-community-import")?.classList.toggle("hidden", hubTab !== "community");
   el("script-submitted-wrap")?.classList.toggle("hidden", hubTab !== "community");
   el("hub-enable-wrap")?.classList.toggle("hidden", hubTab === "community");
-  setCommunityEditorReadonly(hubTab === "community" && communityReadonly);
 }
 
 function upsertHubScript(script) {
@@ -498,29 +577,32 @@ function upsertHubScript(script) {
   else hubScripts.push(script);
 }
 
-function showScriptInMine(script) {
+async function showScriptInMine(script) {
   if (!script) return;
   upsertHubScript(script);
   applyHubTabChrome("mine");
-  loadScriptIntoEditor(script);
+  await loadPersonalScriptIntoEditor(script);
   renderHubList();
 }
 
 function setHubTab(tab, selectScriptId = null) {
   applyHubTabChrome(tab);
   renderHubList();
+  const list = currentHubList();
   if (selectScriptId) {
-    const picked = hubScripts.find((s) => s.id === selectScriptId);
+    const picked = list.find((s) => s.id === selectScriptId);
     if (picked) {
-      loadScriptIntoEditor(picked);
+      if (hubTab === "community") loadCommunityScriptIntoEditor(picked);
+      else loadPersonalScriptIntoEditor(picked);
       return;
     }
   }
   if (!selectScriptId) activeScriptId = "";
-  const scripts = currentHubList();
-  if (scripts.length) {
-    loadScriptIntoEditor(scripts[0]);
+  if (list.length) {
+    if (hubTab === "community") loadCommunityScriptIntoEditor(list[0]);
+    else loadPersonalScriptIntoEditor(list[0]);
   } else {
+    setCommunityEditorReadonly(hubTab === "community" && communityReadonly);
     loadScriptIntoEditor({
       name: "",
       author: hubTab === "community" ? "c00lkiddtech" : "Flx",
@@ -534,22 +616,30 @@ function setHubTab(tab, selectScriptId = null) {
   }
 }
 
-async function refreshScripts() {
+async function refreshScripts(opts = {}) {
+  const keepId = opts.keepId || null;
   try {
     const data = await api("/api/scripts");
     hubScripts = data.scripts || [];
     if (hubTab === "mine") {
       renderHubList();
-      if (activeScriptId) {
-        const current = hubScripts.find((s) => s.id === activeScriptId);
-        if (current) loadScriptIntoEditor(current);
-      } else if (hubScripts.length) {
-        loadScriptIntoEditor(hubScripts[0]);
+      const wantId = keepId || activeScriptId;
+      if (wantId) {
+        const current = hubScripts.find((s) => s.id === wantId);
+        if (current) {
+          await loadPersonalScriptIntoEditor(current);
+          return;
+        }
+      }
+      if (hubScripts.length) {
+        await loadPersonalScriptIntoEditor(hubScripts[0]);
       }
     }
     await refreshStatus();
   } catch (_) {
-    setScriptStatus("Couldn't load your scripts — try refreshing.", true);
+    if (!keepId) {
+      setScriptStatus("Couldn't load your scripts — try refreshing.", true);
+    }
   }
 }
 
@@ -557,14 +647,16 @@ async function refreshCommunityScripts() {
   try {
     const data = await api("/api/community/scripts");
     communityScripts = data.scripts || [];
-    if (data.readonly !== undefined) setCommunityEditorReadonly(!!data.readonly);
+    if (data.readonly !== undefined) communityReadonly = !!data.readonly;
     if (hubTab === "community") {
       renderHubList();
       if (activeScriptId) {
         const current = communityScripts.find((s) => s.id === activeScriptId);
-        if (current) loadScriptIntoEditor(current);
+        if (current) await loadCommunityScriptIntoEditor(current);
       } else if (communityScripts.length) {
-        loadScriptIntoEditor(communityScripts[0]);
+        await loadCommunityScriptIntoEditor(communityScripts[0]);
+      } else {
+        setCommunityEditorReadonly(communityReadonly);
       }
     }
   } catch (_) {
@@ -718,19 +810,32 @@ function setupScriptHub() {
     const btn = el("btn-community-import");
     if (btn) btn.disabled = true;
     try {
-      const data = await postCommunity({ action: "import", id: communityId });
+      const source = await fetchCommunityScriptById(communityId);
+      if (!source?.code?.trim()) {
+        throw new Error("Couldn't read script source — try picking the script again.");
+      }
+      const data = await postCommunity({
+        action: "import",
+        id: communityId,
+        code: source.code,
+      });
       const imported = data.script;
       if (!imported?.id) {
         throw new Error("Import worked but no script came back — weird.");
       }
-      if (!imported.code) {
-        const fromList = communityScripts.find((s) => s.id === communityId);
-        imported.code = fromList?.code || el("script-code")?.value || "";
+      if (!imported.code?.trim()) {
+        imported.code = source.code;
       }
-      showScriptInMine(imported);
+      let mine = imported;
+      try {
+        const loaded = await fetchPersonalScriptById(imported.id);
+        if (loaded?.code?.trim()) mine = { ...imported, ...loaded };
+      } catch (_) {
+        /* use import payload */
+      }
+      await showScriptInMine(mine);
       setScriptStatus("Added to My scripts — you're looking at it now.");
-      refreshScripts().catch(() => {});
-      refreshStatus().catch(() => {});
+      await refreshScripts({ keepId: mine.id });
     } catch (err) {
       setScriptStatus(err.message || String(err), true);
     } finally {

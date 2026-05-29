@@ -13,6 +13,10 @@ def load_gui_settings() -> dict:
         "autostart": False,
         "delete_commands": True,
         "verbose": True,
+        "copycat_enabled": False,
+        "copycat_user_id": "",
+        "afk_enabled": False,
+        "afk_message": "I'm AFK right now.",
     }
     if not path.is_file():
         return defaults

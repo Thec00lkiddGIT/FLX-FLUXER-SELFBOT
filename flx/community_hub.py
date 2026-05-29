@@ -12,7 +12,10 @@ from pathlib import Path
 from flx.script_hub import (
     HubScript,
     _hub_script_from_raw,
+    _load_manifest as _load_personal_manifest,
     _now_iso,
+    _save_manifest as _save_personal_manifest,
+    _script_path as _personal_script_path,
     read_script_code,
     save_script,
     validate_code,
@@ -34,6 +37,20 @@ def _copy_bundled_community(bundled: Path, dest: Path) -> None:
             shutil.copy2(item, target)
 
 
+def _ensure_community_py_files(community: Path, bundled: Path, scripts: list[dict]) -> None:
+    """Make sure every manifest entry has a .py on disk (fixes empty editor in packaged builds)."""
+    import shutil
+
+    for entry in scripts:
+        sid = re.sub(r"[^a-zA-Z0-9_-]", "", str(entry.get("id") or ""))
+        if not sid:
+            continue
+        src = bundled / f"{sid}.py"
+        dest = community / f"{sid}.py"
+        if src.is_file() and (not dest.is_file() or dest.stat().st_size == 0):
+            shutil.copy2(src, dest)
+
+
 def _sync_community_from_bundled(community: Path, bundled: Path) -> None:
     """Replace local community hub with bundled scripts only (no user uploads)."""
     import shutil
@@ -50,6 +67,7 @@ def _sync_community_from_bundled(community: Path, bundled: Path) -> None:
             py.unlink(missing_ok=True)
 
     _copy_bundled_community(bundled, community)
+    _ensure_community_py_files(community, bundled, bundled_scripts)
     _save_manifest_to(community / "manifest.json", bundled_scripts)
 
 
@@ -145,9 +163,25 @@ def community_script_dict(script: HubScript) -> dict:
 
 
 def read_community_code(script_id: str) -> str:
-    path = _script_path(script_id)
-    if path.is_file():
-        return path.read_text()
+    safe = re.sub(r"[^a-zA-Z0-9_-]", "", script_id)
+    if not safe:
+        return ""
+
+    candidates: list[Path] = []
+    bundled = bundled_community_dir()
+    if bundled:
+        candidates.append(bundled / f"{safe}.py")
+    candidates.append(_community_dir() / f"{safe}.py")
+
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if text.strip():
+            return text
     return ""
 
 
@@ -233,7 +267,34 @@ def delete_community_script(script_id: str) -> bool:
     return True
 
 
-def import_community_to_hub(community_id: str) -> tuple[HubScript | None, str | None]:
+def _command_names(entry: dict) -> set[str]:
+    names: set[str] = set()
+    for c in entry.get("commands") or [entry.get("command")]:
+        if c:
+            names.add(str(c).strip().lower())
+    return names
+
+
+def _clear_personal_hub_slots(community_id: str, command_names: set[str]) -> None:
+    """Drop old My-scripts copies that block installing a community script (!echo x2, etc.)."""
+    if not command_names:
+        return
+    kept: list[dict] = []
+    for entry in _load_personal_manifest():
+        eid = str(entry.get("id") or "").strip()
+        cmds = _command_names(entry)
+        if eid == community_id or cmds & command_names:
+            _personal_script_path(eid).unlink(missing_ok=True)
+            continue
+        kept.append(entry)
+    _save_personal_manifest(kept)
+
+
+def import_community_to_hub(
+    community_id: str,
+    *,
+    code: str | None = None,
+) -> tuple[HubScript | None, str | None]:
     raw = next((e for e in _load_manifest() if e.get("id") == community_id), None)
     if raw is None:
         return None, "Couldn't find that community script."
@@ -242,14 +303,30 @@ def import_community_to_hub(community_id: str) -> tuple[HubScript | None, str | 
     if script is None:
         return None, "That script entry looks broken — sorry about that."
 
-    code = read_community_code(community_id)
-    if not code.strip():
+    body = read_community_code(community_id).strip()
+    if not body:
+        body = (code or "").strip()
+    if not body:
         return None, "The script file is missing on disk."
 
-    primary = script.command
-    err = validate_command_name(primary, exclude_id=community_id)
-    if err:
-        return None, f"Can't add this one: {err} Try another script or rename the command."
+    from flx.script_hub import _extract_commands_from_code
+
+    commands, load_err = _extract_commands_from_code(body, community_id)
+    if load_err:
+        return None, load_err
+
+    primary = (script.command or "").strip().lower()
+    if not primary and commands:
+        primary = commands[0]
+    cmd_set = {primary} if primary else set()
+    cmd_set.update(commands)
+
+    _clear_personal_hub_slots(community_id, cmd_set)
+
+    if primary:
+        err = validate_command_name(primary, exclude_id=community_id)
+        if err:
+            return None, f"Can't add this one: {err} Try another script or rename the command."
 
     return save_script(
         script_id=community_id,
@@ -257,8 +334,8 @@ def import_community_to_hub(community_id: str) -> tuple[HubScript | None, str | 
         author=script.author,
         description=script.description,
         usage=script.usage,
-        command=primary,
+        command=primary or (commands[0] if commands else ""),
         help_text=script.help,
-        code=code,
+        code=body,
         enabled=True,
     )

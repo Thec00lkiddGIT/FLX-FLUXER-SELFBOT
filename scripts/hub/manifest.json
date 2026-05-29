@@ -1,3 +1,56 @@
 {
-  "scripts": []
+  "scripts": [
+    {
+      "id": "echo",
+      "name": "Echo",
+      "author": "c00lkiddtech",
+      "description": "Repeat your text",
+      "usage": "<p>echo <text>",
+      "command": "echo",
+      "help": "Repeat your text",
+      "commands": ["echo"],
+      "enabled": true,
+      "format": "flxscript",
+      "submitted_by": "c00lkiddtech"
+    },
+    {
+      "id": "httpcat",
+      "name": "HTTP Cat",
+      "author": "c00lkiddtech",
+      "description": "http.cat status image (e.g. 404)",
+      "usage": "<p>httpcat <status code>",
+      "command": "httpcat",
+      "help": "Post an http.cat status image",
+      "commands": ["httpcat"],
+      "enabled": true,
+      "format": "flxscript",
+      "submitted_by": "c00lkiddtech"
+    },
+    {
+      "id": "pokemon",
+      "name": "Pokémon",
+      "author": "c00lkiddtech",
+      "description": "PokéAPI lookup (name, id, or random)",
+      "usage": "<p>pokemon <name|id|random>",
+      "command": "pokemon",
+      "help": "Pokemon sprite and stats (PokeAPI)",
+      "commands": ["pokemon"],
+      "enabled": true,
+      "format": "flxscript",
+      "submitted_by": "c00lkiddtech"
+    },
+    {
+      "id": "check",
+      "name": "URL Check",
+      "author": "c00lkiddtech",
+      "description": "URL filter check (GLSeries)",
+      "usage": "<p>check <url>",
+      "command": "check",
+      "help": "Check a URL against school/web filters",
+      "commands": ["check"],
+      "enabled": true,
+      "format": "flxscript",
+      "submitted_by": "c00lkiddtech"
+    }
+  ]
 }

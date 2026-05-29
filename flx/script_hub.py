@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flx.commands import COMMANDS
+from flx.command_catalog import all_builtin_command_names
 from flx.fluxerscript import (
     CommandContext,
     FlxMessage,
@@ -29,7 +29,7 @@ from flx.fluxerscript import (
 from flx.paths import ensure_script_hub
 
 COMMAND_RE = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
-BUILTIN_NAMES = frozenset(name for name, _ in COMMANDS)
+BUILTIN_NAMES = all_builtin_command_names()
 
 
 def _hub() -> Path:

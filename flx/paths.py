@@ -128,6 +128,7 @@ def _copy_bundled_tree(bundled: Path, hub: Path) -> None:
 
 _LEGACY_HUB_IDS = frozenset({"echo", "httpcat", "pokemon", "check"})
 _HUB_MIGRATION_MARKER = ".personal_hub_migrated_v2"
+_BUNDLED_SEED_MARKER = ".personal_hub_bundled_v1_1_0"
 
 
 def _prune_orphan_hub_py(hub: Path, scripts: list[dict]) -> None:
@@ -152,11 +153,41 @@ def _migrate_legacy_personal_scripts(hub: Path, manifest: Path) -> None:
     marker.write_text("1\n", encoding="utf-8")
 
 
+def _seed_missing_bundled_scripts(hub: Path, bundled: Path | None) -> None:
+    """Until Community tab is fixed: ensure bundled hub scripts exist in My Scripts."""
+    if not bundled or not bundled.is_dir():
+        return
+    marker = hub / _BUNDLED_SEED_MARKER
+    if marker.is_file():
+        return
+    manifest = hub / "manifest.json"
+    if not manifest.is_file():
+        return
+    personal = _read_hub_manifest(manifest)
+    existing_ids = {str(e.get("id") or "").strip() for e in personal}
+    bundled_scripts = _read_hub_manifest(bundled / "manifest.json")
+    added = False
+    for entry in bundled_scripts:
+        sid = str(entry.get("id") or "").strip()
+        if not sid or sid in existing_ids:
+            continue
+        src = bundled / f"{sid}.py"
+        if src.is_file():
+            shutil.copy2(src, hub / f"{sid}.py")
+        personal.append(dict(entry))
+        existing_ids.add(sid)
+        added = True
+    if added:
+        _write_hub_manifest(manifest, personal)
+    marker.write_text("1\n", encoding="utf-8")
+
+
 def _sync_personal_hub(hub: Path, bundled: Path | None) -> None:
     """Seed an empty personal hub on first launch; keep user-installed scripts after that."""
     manifest = hub / "manifest.json"
     if manifest.is_file():
         _migrate_legacy_personal_scripts(hub, manifest)
+        _seed_missing_bundled_scripts(hub, bundled)
         _prune_orphan_hub_py(hub, _read_hub_manifest(manifest))
         return
 
@@ -172,6 +203,7 @@ def _sync_personal_hub(hub: Path, bundled: Path | None) -> None:
                 shutil.copy2(src, hub / f"{sid}.py")
     _write_hub_manifest(manifest, scripts)
     (hub / _HUB_MIGRATION_MARKER).write_text("1\n", encoding="utf-8")
+    (hub / _BUNDLED_SEED_MARKER).write_text("1\n", encoding="utf-8")
 
 
 def ensure_script_hub() -> Path:

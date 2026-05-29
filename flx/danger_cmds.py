@@ -21,11 +21,16 @@ from flx.troll import get_troll_manager
 if TYPE_CHECKING:
     from flx.rest import FluxerREST
 
-DANGER_COMMANDS: list[tuple[str, str]] = [
-    ("abuse", "Confirm abuse mode in GUI; `spam <text> <n> <seconds>`"),
+MOD_COMMANDS: list[tuple[str, str]] = [
     ("mod", "ban|kick <@user|id> (reply works for kick)"),
+]
+
+ABUSE_COMMANDS: list[tuple[str, str]] = [
+    ("abuse", "Confirm abuse mode in GUI; `spam <text> <n> <seconds>`"),
     ("troll", "ghostping | annoy unreact|delete | reactannoy | stop"),
 ]
+
+DANGER_COMMANDS: list[tuple[str, str]] = MOD_COMMANDS + ABUSE_COMMANDS
 
 MAX_SPAM_COUNT = 100
 MIN_SPAM_DELAY = 0.05

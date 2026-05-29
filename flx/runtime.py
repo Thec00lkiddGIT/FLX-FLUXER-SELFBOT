@@ -224,6 +224,9 @@ class BotRuntime:
             get_troll_manager().on_message_create(self._rest, data)
 
         if not self._user_id or msg.author_id != self._user_id:
+            from flx.utility_cmds import handle_incoming_message
+
+            handle_incoming_message(msg, self._rest, self._user_id)
             for reply in dispatch_message_listeners(msg):
                 self._send_text(msg.channel_id, reply)
             return

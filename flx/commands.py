@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import time
 from dataclasses import dataclass, field
 
 from flx.config import command_prefix
@@ -23,7 +24,7 @@ from flx.youtube import youtube_reply
 PREFIX = command_prefix()
 
 COMMANDS: list[tuple[str, str]] = [
-    ("ping", "Returns pong"),
+    ("ping", "Returns bot latency (ms)"),
     ("gay", "Random percentage joke"),
     ("word", "Random word (API Ninjas)"),
     ("dadjoke", "Random dad joke"),
@@ -64,13 +65,24 @@ def dispatch_builtin(
     rest: FluxerREST,
 ) -> BuiltinResult | None:
     from flx.danger_cmds import dispatch_danger
+    from flx.utility_cmds import dispatch_utility
+
+    util = dispatch_utility(name, args, message, rest, prefix=PREFIX)
+    if util is not None:
+        return util
 
     danger = dispatch_danger(name, args, message, rest, prefix=PREFIX)
     if danger is not None:
         return danger
 
     if name == "ping":
-        return BuiltinResult(replies=["pong"])
+        start = time.perf_counter()
+        try:
+            rest.get_me()
+            ms = int((time.perf_counter() - start) * 1000)
+            return BuiltinResult(replies=[f"pong — **{ms}ms**"])
+        except RuntimeError as exc:
+            return BuiltinResult(replies=[f"pong (API error: {exc})"])
 
     if name == "gay":
         pct = random.randint(0, 100)
@@ -267,24 +279,9 @@ def dispatch_builtin(
             return _err("Webhook", exc)
 
     if name == "help":
-        from flx.script_hub import hub_command_specs
+        from flx.command_catalog import format_help
 
-        lines = [f"**Commands** (prefix `{PREFIX}`)", ""]
-        rows = list(COMMANDS)
-        for spec in hub_command_specs():
-            rows.append((spec["name"], spec.get("help", "")))
-        seen: set[str] = set()
-        for cmd, help_text in rows:
-            if cmd in seen:
-                continue
-            seen.add(cmd)
-            lines.append(f"`{PREFIX}{cmd}` - {help_text}")
-        lines.extend(["", "**Abuse / mod / troll** (enable with `!abuse` in GUI first)", ""])
-        from flx.danger_cmds import DANGER_COMMANDS
-
-        for cmd, help_text in DANGER_COMMANDS:
-            lines.append(f"`{PREFIX}{cmd}` - {help_text}")
-        return BuiltinResult(replies=["\n".join(lines)])
+        return BuiltinResult(replies=[format_help(PREFIX)])
 
     if name == "status":
         status = (args.strip().lower() or "online")

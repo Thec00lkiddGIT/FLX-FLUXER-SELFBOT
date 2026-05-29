@@ -51,9 +51,14 @@ def _is_chromeos_linux() -> bool:
 def _run_web(host: str, port: int, *, chromebook: bool = False) -> int:
     import webbrowser
 
+    import os
+
     from flx.gui.bootstrap import prepare_runtime
     from flx.gui.server import run_server
     from flx.runtime import get_runtime
+    from flx.utility_cmds import set_app_exit_callback
+
+    set_app_exit_callback(lambda: os._exit(0))
 
     server = run_server(host, port)
     url = f"http://{host}:{port}/"
