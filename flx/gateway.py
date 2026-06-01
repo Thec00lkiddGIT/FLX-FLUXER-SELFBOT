@@ -35,12 +35,14 @@ class GatewayWorker:
         *,
         on_ready: Callable[[dict], None] | None = None,
         on_error: Callable[[str], None] | None = None,
+        on_disconnect: Callable[[], None] | None = None,
     ) -> None:
         self.token = token
         self.rest = FluxerREST(token, api_base)
         self.on_event = on_event
         self.on_ready_cb = on_ready
         self.on_error = on_error
+        self.on_disconnect = on_disconnect
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self.user: dict | None = None
@@ -74,6 +76,9 @@ class GatewayWorker:
             log.exception("Gateway crashed")
             if self.on_error:
                 self.on_error(str(exc))
+        finally:
+            if self.on_disconnect:
+                self.on_disconnect()
 
     async def _main(self) -> None:
         try:
@@ -87,6 +92,7 @@ class GatewayWorker:
 
         heartbeat_interval = 41250
         seq: int | None = None
+        heartbeat_task: asyncio.Task | None = None
 
         while not self._stop.is_set():
             try:
@@ -123,7 +129,9 @@ class GatewayWorker:
                                     await asyncio.sleep(heartbeat_interval / 1000)
                                     await ws.send(json.dumps({"op": OP_HEARTBEAT, "d": seq}))
 
-                            asyncio.create_task(heartbeat())
+                            if heartbeat_task and not heartbeat_task.done():
+                                heartbeat_task.cancel()
+                            heartbeat_task = asyncio.create_task(heartbeat())
                             continue
 
                         if op == OP_HEARTBEAT:

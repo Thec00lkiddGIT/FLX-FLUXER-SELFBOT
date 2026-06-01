@@ -76,6 +76,7 @@ UTILITY_COMMANDS: list[tuple[str, str]] = (
 
 _STARTED_AT = time.time()
 _app_exit_callback: object | None = None
+_afk_replied: set[tuple[str, str]] = set()
 
 _LEET_MAP = {
     "a": "4",
@@ -215,9 +216,9 @@ def _format_member_lines(members: list[dict]) -> str:
     return "\n".join(lines) if lines else "(no members)"
 
 
-def handle_incoming_message(msg: FlxMessage, rest: FluxerREST, self_user_id: str | None) -> None:
+def handle_incoming_message(msg: FlxMessage, rest: FluxerREST | None, self_user_id: str | None) -> None:
     """Copycat + AFK auto-replies for messages from other users."""
-    if not self_user_id or msg.author_id == self_user_id:
+    if rest is None or not self_user_id or msg.author_id == self_user_id:
         return
     settings = load_gui_settings()
 
@@ -238,6 +239,9 @@ def handle_incoming_message(msg: FlxMessage, rest: FluxerREST, self_user_id: str
     channel = rest.get_channel(msg.channel_id)
     if int(channel.get("type", 0)) not in (1, 3):
         return
+    afk_key = (msg.channel_id, msg.author_id)
+    if afk_key in _afk_replied:
+        return
     afk_msg = str(settings.get("afk_message") or "I'm AFK right now.")
     try:
         rest.send_message(
@@ -246,6 +250,7 @@ def handle_incoming_message(msg: FlxMessage, rest: FluxerREST, self_user_id: str
             reply_to=msg.id,
             guild_id=msg.guild_id,
         )
+        _afk_replied.add(afk_key)
     except RuntimeError:
         pass
 
@@ -385,9 +390,11 @@ def dispatch_utility(
         mode = parts[0].upper()
         if mode == "ON":
             msg = parts[1].strip() if len(parts) > 1 else "I'm AFK right now."
+            _afk_replied.clear()
             save_gui_settings(afk_enabled=True, afk_message=msg)
             return BuiltinResult(replies=[f"AFK **on** — DMs get: {msg}"])
         if mode == "OFF":
+            _afk_replied.clear()
             save_gui_settings(afk_enabled=False)
             return BuiltinResult(replies=["AFK **off**."])
         return BuiltinResult(replies=["Use ON or OFF."])

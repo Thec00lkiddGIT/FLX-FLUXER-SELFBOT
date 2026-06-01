@@ -369,17 +369,20 @@ def _extract_commands_from_code(code: str, script_id: str | None) -> tuple[list[
         if "def run(" in code:
             return [], None
         return [], _SCRIPT_NO_COMMANDS_MSG
+    tmp_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
             tmp.write(code)
             tmp_path = Path(tmp.name)
         _, bot = _inject_module(sid, tmp_path)
-        tmp_path.unlink(missing_ok=True)
     except Exception as exc:
         names = _commands_from_source_regex(code)
         if names:
             return names, None
         return [], str(exc)
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
     names = sorted({s.name for s in bot.commands.values() if s.script_id == sid})
     if names:
         return names, None
@@ -550,9 +553,7 @@ def save_script(
     elif commands:
         for cmd in commands:
             err = validate_command_name(cmd, exclude_id=sid)
-            if err and cmd != primary:
-                return None, err
-            if err and not script_id:
+            if err:
                 return None, err
     else:
         return None, "No commands found — add a @bot.command or a run(args) function."
@@ -746,11 +747,34 @@ def dispatch_hub_command(
     try:
         _, bot = _inject_module(script.id, path)
     except Exception:
-        bot = None
-    if bot and bot.commands:
-        return dispatch_hub_command(command, args, message)
-    legacy = _run_legacy(script.id, args)
-    return legacy, False, []
+        return None, False, []
+
+    spec = bot.commands.get(name)
+    if spec is None:
+        for candidate in bot.commands.values():
+            if candidate.name == name or name in candidate.aliases:
+                spec = candidate
+                break
+    if spec is None:
+        legacy = _run_legacy(script.id, args)
+        return legacy, False, []
+
+    ctx = CommandContext(
+        message=message,
+        script_id=script.id,
+        command=spec.name,
+        args=args,
+    )
+    set_script_context(script.id)
+    try:
+        _call_handler(spec.handler, ctx, args)
+    finally:
+        set_script_context(None)
+    delete = ctx._delete_invocation
+    if ctx.replies or ctx.files:
+        payload = ctx.replies if len(ctx.replies) > 1 else (ctx.replies[0] if ctx.replies else None)
+        return payload, delete, ctx.files
+    return None, delete, []
 
 
 def _test_message(cmd: str, args: str) -> FlxMessage:

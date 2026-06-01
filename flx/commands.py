@@ -21,7 +21,6 @@ from flx.user_info import user_info_lookup
 from flx.webhook_cmd import run_webhook_command
 from flx.youtube import youtube_reply
 
-PREFIX = command_prefix()
 
 COMMANDS: list[tuple[str, str]] = [
     ("ping", "Returns bot latency (ms)"),
@@ -51,7 +50,7 @@ class BuiltinResult:
 
 
 def _usage(cmd: str, text: str) -> str:
-    return f"Usage: `{PREFIX}{cmd}` {text}"
+    return f"Usage: `{command_prefix()}{cmd}` {text}"
 
 
 def _err(prefix: str, exc: Exception) -> BuiltinResult:
@@ -67,11 +66,12 @@ def dispatch_builtin(
     from flx.danger_cmds import dispatch_danger
     from flx.utility_cmds import dispatch_utility
 
-    util = dispatch_utility(name, args, message, rest, prefix=PREFIX)
+    prefix = command_prefix()
+    util = dispatch_utility(name, args, message, rest, prefix=prefix)
     if util is not None:
         return util
 
-    danger = dispatch_danger(name, args, message, rest, prefix=PREFIX)
+    danger = dispatch_danger(name, args, message, rest, prefix=prefix)
     if danger is not None:
         return danger
 
@@ -158,9 +158,9 @@ def dispatch_builtin(
             return BuiltinResult(
                 replies=[
                     "Usage:\n"
-                    f"`{PREFIX}youtube search <query>`\n"
-                    f"`{PREFIX}youtube video <id or url>`\n"
-                    f"`{PREFIX}youtube trans <id or url>`"
+                    f"`{prefix}youtube search <query>`\n"
+                    f"`{prefix}youtube video <id or url>`\n"
+                    f"`{prefix}youtube trans <id or url>`"
                 ]
             )
         sub, arg = parts[0].lower(), parts[1].strip()
@@ -205,12 +205,12 @@ def dispatch_builtin(
             return BuiltinResult(
                 replies=[
                     "Usage:\n"
-                    f"`{PREFIX}osint email <address>`\n"
-                    f"`{PREFIX}osint phone <number>`\n"
-                    f"`{PREFIX}osint username <handle>`\n"
-                    f"`{PREFIX}osint name <full name>`\n"
-                    f"`{PREFIX}osint wallet <address>`\n"
-                    f"`{PREFIX}osint credits`"
+                    f"`{prefix}osint email <address>`\n"
+                    f"`{prefix}osint phone <number>`\n"
+                    f"`{prefix}osint username <handle>`\n"
+                    f"`{prefix}osint name <full name>`\n"
+                    f"`{prefix}osint wallet <address>`\n"
+                    f"`{prefix}osint credits`"
                 ]
             )
         sub = parts[0].lower()
@@ -281,7 +281,7 @@ def dispatch_builtin(
     if name == "help":
         from flx.command_catalog import format_help
 
-        return BuiltinResult(replies=[format_help(PREFIX)])
+        return BuiltinResult(replies=[format_help(prefix)])
 
     if name == "status":
         status = (args.strip().lower() or "online")

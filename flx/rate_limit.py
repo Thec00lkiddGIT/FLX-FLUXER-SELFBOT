@@ -53,9 +53,6 @@ def _normalize_delay_seconds(value: object, *, key: str = "") -> float | None:
     elif "reset" in lower_key and number > now:
         # Absolute reset timestamp (epoch seconds) -> delta.
         number -= now
-    elif number > 1000:
-        # Many APIs return retry_after in milliseconds.
-        number /= 1000.0
     return max(0.0, number)
 
 

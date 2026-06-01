@@ -8,7 +8,7 @@ from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 
-from flx.commands import PREFIX, run_builtin
+from flx.commands import run_builtin
 from flx.config import api_base_url, command_prefix, fluxer_token, load_dotenv
 from flx.fluxerscript import CommandContext, FlxMessage
 from flx.gateway import GatewayWorker
@@ -138,12 +138,18 @@ class BotRuntime:
                 self._error = msg
             self._push_event("error", "Connection trouble", msg)
 
+        def on_disconnect() -> None:
+            with self._lock:
+                self._settings.running = False
+            self._push_event("info", "Disconnected", "Gateway thread stopped.")
+
         self._gateway = GatewayWorker(
             token,
             api,
             self._on_gateway_event,
             on_ready=on_ready,
             on_error=on_error,
+            on_disconnect=on_disconnect,
         )
         self._gateway.start()
         self._push_event("success", "Bot started", "Watching Fluxer for commands.")
@@ -176,9 +182,15 @@ class BotRuntime:
         load_dotenv()
         has_token = bool(os.environ.get("FLUXER_TOKEN", "").strip())
         with self._lock:
-            gw_alive = self._gateway is not None and self._settings.running
+            gw = self._gateway
+            gw_alive = (
+                gw is not None
+                and gw._thread is not None
+                and gw._thread.is_alive()
+                and self._settings.running
+            )
             return {
-                "running": self._settings.running and gw_alive,
+                "running": gw_alive,
                 "delete_commands": self._settings.delete_commands,
                 "verbose": self._settings.verbose,
                 "display_name": self._user_name,

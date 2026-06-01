@@ -267,11 +267,11 @@ def _cmd_troll(args: str, msg: FlxMessage, rest: FluxerREST, *, prefix: str) -> 
         )
 
     if sub == "stop":
-        if len(parts) < 2:
+        if len(parts) < 3:
             return _usage(prefix, "troll stop", "annoy|reactannoy <@user|id>")
         which = parts[1].lower()
         try:
-            user_id = parse_user_id(parts[2] if len(parts) > 2 else "")
+            user_id = parse_user_id(parts[2])
         except ValueError as exc:
             return BuiltinResult(replies=[str(exc)])
         if which == "annoy":

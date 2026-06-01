@@ -166,8 +166,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/static/"):
-            rel = path[len("/static/") :]
-            self._serve_file(STATIC_DIR / rel)
+            rel = path[len("/static/") :].lstrip("/")
+            if ".." in rel or rel.startswith("/"):
+                self.send_error(403)
+                return
+            target = (STATIC_DIR / rel).resolve()
+            if not target.is_file() or not target.is_relative_to(STATIC_DIR.resolve()):
+                self.send_error(404)
+                return
+            self._serve_file(target)
             return
 
         self.send_error(404)

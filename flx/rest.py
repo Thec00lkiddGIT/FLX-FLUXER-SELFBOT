@@ -273,11 +273,14 @@ class FluxerREST:
         chunks = split_message_content(content)
         if not chunks:
             return {}
-        return self._request(
+        last = self._request(
             "PATCH",
             f"/channels/{channel_id}/messages/{message_id}",
             body={"content": chunks[0]},
         )
+        for chunk in chunks[1:]:
+            last = self._send_message_once(channel_id, chunk)
+        return last if isinstance(last, dict) else {}
 
     def delete_message(self, channel_id: str, message_id: str) -> None:
         self._request("DELETE", f"/channels/{channel_id}/messages/{message_id}")
