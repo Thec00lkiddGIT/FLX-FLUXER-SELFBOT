@@ -6,15 +6,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>FLX</title>
-  <link rel="icon" type="image/png" href="/static/icon.png" />
-  <link rel="stylesheet" href="/static/app.css" />
+  <link rel="icon" type="image/png" href="./static/icon.png" />
+  <link rel="stylesheet" href="./static/app.css" />
 </head>
 <body>
+  <div class="pages-demo-banner glass" role="status">
+    <strong>Live preview</strong> — FLX dashboard on GitHub Pages.
+    <a href="https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT">Get FLX</a> to run the real bot.
+  </div>
+
   <div class="window">
     <div class="shell">
       <nav class="sidebar" aria-label="Navigation">
         <div class="sidebar-brand" aria-hidden="true">
-          <img src="/static/icon.png" alt="" class="sidebar-logo" width="32" height="32" />
+          <img src="./static/icon.png" alt="" class="sidebar-logo" width="32" height="32" />
           <span class="sidebar-brand-text">FLX</span>
         </div>
         <div class="sidebar-nav">
@@ -328,6 +333,8 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="./static/app.js"></script>
+  <script>window.FLX_DEMO = true;</script>
+  <script src="./static/demo-data.js"></script>
 </body>
 </html>
