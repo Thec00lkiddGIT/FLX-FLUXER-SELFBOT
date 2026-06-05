@@ -81,6 +81,13 @@ body {
 
 .nav-links a:hover { color: var(--text); }
 
+.nav-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
