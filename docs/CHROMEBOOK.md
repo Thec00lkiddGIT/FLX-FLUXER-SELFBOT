@@ -15,7 +15,7 @@ Without Linux turned on, FLX can't run on the Chromebook itself. You can still c
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip unzip
 cd ~
-wget -O flx.zip https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases/latest/download/FLX-ChromeOS.zip
+wget -O flx.zip https://github.com/flxselfbot/FLX-FLUXER-SELFBOT/releases/latest/download/FLX-ChromeOS.zip
 unzip flx.zip
 cd FLX
 ./run-chromebook.sh
@@ -40,7 +40,7 @@ Most Chromebook users should use `./run-chromebook.sh` instead.
 ## Option C: Run from source
 
 ```bash
-git clone https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT.git
+git clone https://github.com/flxselfbot/FLX-FLUXER-SELFBOT.git
 cd FLX-FLUXER-SELFBOT
 python3 -m venv .venv
 source .venv/bin/activate

@@ -6,7 +6,7 @@ Your Fluxer selfbot, with a **dashboard you can actually use** and a **Script Hu
 
 ## Get FLX
 
-**Downloads:** [github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases](https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT/releases)
+**Downloads:** [github.com/flxselfbot/FLX-FLUXER-SELFBOT/releases](https://github.com/flxselfbot/FLX-FLUXER-SELFBOT/releases)
 
 | Where you're on | Grab this |
 |-----------------|-----------|
@@ -31,7 +31,7 @@ On Chromebook, `python gui.py --chromebook` or `./run-chromebook.sh` is usually 
 ## Run from source (Python)
 
 ```bash
-git clone https://github.com/Thec00lkiddGIT/FLX-FLUXER-SELFBOT.git
+git clone https://github.com/flxselfbot/FLX-FLUXER-SELFBOT.git
 cd FLX-FLUXER-SELFBOT
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
