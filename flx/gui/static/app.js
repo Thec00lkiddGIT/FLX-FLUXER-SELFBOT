@@ -1,5 +1,4 @@
 const API = "";
-const IS_DEMO = typeof window !== "undefined" && window.FLX_DEMO === true;
 let lastEventId = 0;
 let activeScriptId = "";
 let hubScripts = [];
@@ -58,9 +57,6 @@ function setRing(id, value, max) {
 }
 
 async function api(path, options) {
-  if (IS_DEMO && typeof window.demoApi === "function") {
-    return window.demoApi(path, options);
-  }
   const res = await fetch(API + path, options);
   const data = await res.json();
   if (!res.ok && data && data.error) {
