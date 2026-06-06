@@ -13,6 +13,8 @@ mkdir -p "${DOCS}/static"
 cp "${PAGES}/index.html" "${DOCS}/index.html"
 cp "${PAGES}/landing.css" "${DOCS}/static/landing.css"
 cp "${ASSETS}/icon.png" "${DOCS}/static/icon.png"
+mkdir -p "${DOCS}/invite"
+cp "${PAGES}/invite/index.html" "${DOCS}/invite/index.html"
 touch "${DOCS}/.nojekyll"
 
 # Remove old dashboard demo artifacts if present
