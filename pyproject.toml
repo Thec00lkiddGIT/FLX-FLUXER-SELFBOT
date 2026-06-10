@@ -1,0 +1,63 @@
+[build-system]
+requires = ["briefcase"]
+
+[project]
+name = "flx"
+version = "1.1.4"
+description = "Fluxer selfbot with dashboard and Script Hub"
+readme = "README.md"
+requires-python = ">=3.12"
+
+[tool.briefcase]
+project_name = "FLX"
+bundle = "com.flx"
+version = "1.1.4"
+license = { text = "MIT" }
+author = "c00lkiddtech"
+author_email = "cl42010@icloud.com"
+url = "https://github.com/flxselfbot/FLX-FLUXER-SELFBOT"
+
+[tool.briefcase.app.app]
+formal_name = "FLX"
+description = "Fluxer selfbot for iOS and Android"
+long_description = """FLX - Fluxer selfbot with dashboard, Script Hub, and commands."""
+icon = "assets/icon"
+sources = ["app", "flx", "gui.py"]
+requires = [
+    "websockets>=12.0",
+    "certifi>=2024.0",
+    "toga-iOS~=0.5.0; sys_platform == 'ios'",
+    "toga-android~=0.5.0; sys_platform == 'android'",
+]
+test_requires = []
+
+[tool.briefcase.app.app.iOS]
+requires = ["websockets>=12.0", "certifi>=2024.0"]
+supported = true
+
+[tool.briefcase.app.app.iOS.info]
+UIBackgroundModes = ["audio"]
+UIFileSharingEnabled = true
+LSSupportsOpeningDocumentsInPlace = true
+UIStatusBarStyle = "UIStatusBarStyleLightContent"
+UIViewControllerBasedStatusBarAppearance = false
+
+[tool.briefcase.app.app.android]
+requires = ["websockets>=12.0", "certifi>=2024.0"]
+supported = true
+
+[tool.briefcase.app.app.android.permission]
+"android.permission.INTERNET" = "Access Fluxer API and load the local dashboard"
+
+[tool.briefcase.app.app.android.manifest.application]
+usesCleartextTraffic = true
+
+[tool.briefcase.app.app.macOS]
+requires = ["pywebview>=5.0", "websockets>=12.0"]
+supported = false
+
+[tool.briefcase.app.app.linux]
+supported = false
+
+[tool.briefcase.app.app.windows]
+supported = false

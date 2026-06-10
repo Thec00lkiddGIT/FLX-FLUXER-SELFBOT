@@ -179,8 +179,14 @@ class BotRuntime:
             abuse_pending_confirm,
         )
 
+        import sys
+
+        from flx.config import has_fluxer_token
+
         load_dotenv()
-        has_token = bool(os.environ.get("FLUXER_TOKEN", "").strip())
+        has_token = has_fluxer_token()
+        is_ios = sys.platform == "ios" or os.environ.get("FLX_IOS") == "1"
+        is_android = sys.platform == "android" or os.environ.get("FLX_ANDROID") == "1"
         with self._lock:
             gw = self._gateway
             gw_alive = (
@@ -207,6 +213,7 @@ class BotRuntime:
                 "abuse_mode": abuse_mode_enabled(),
                 "abuse_pending_confirm": abuse_pending_confirm(),
                 "abuse_warning": ABUSE_WARNING,
+                "platform": "ios" if is_ios else ("android" if is_android else "desktop"),
             }
 
     def _command_name(self, body: str) -> str | None:

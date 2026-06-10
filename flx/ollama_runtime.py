@@ -23,6 +23,27 @@ _pull_lock = threading.Lock()
 _pull_thread: threading.Thread | None = None
 
 
+def is_mobile_platform() -> bool:
+    if os.environ.get("FLX_IOS") == "1" or os.environ.get("FLX_ANDROID") == "1":
+        return True
+    return sys.platform in ("ios", "android")
+
+
+def ollama_is_localhost(url: str | None = None) -> bool:
+    from urllib.parse import urlparse
+
+    host = (urlparse(url or ollama_base_url()).hostname or "").lower()
+    return host in ("127.0.0.1", "localhost", "::1", "0.0.0.0", "")
+
+
+MOBILE_OLLAMA_HINT = (
+    "On iPhone/iPad, FLX AI talks to Ollama on your Mac. "
+    "On the Mac: run Ollama, enable network access, then add "
+    "OLLAMA_BASE_URL=http://YOUR_MAC_IP:11434 to config.env "
+    "(Files → On My iPhone → FLX → Flx)."
+)
+
+
 def _system_ollama_app() -> Path:
     return Path("/Applications/Ollama.app")
 
@@ -189,6 +210,8 @@ def _launch_ollama_generic() -> bool:
 
 
 def launch_ollama() -> bool:
+    if is_mobile_platform():
+        return _api_reachable()
     if sys.platform == "darwin":
         return _launch_ollama_mac()
     return _launch_ollama_generic()
@@ -268,6 +291,14 @@ def ensure_model_ready(*, blocking: bool = False, wait_sec: float = 0) -> bool:
 
 
 def ensure_ollama_setup() -> dict[str, object]:
+    if is_mobile_platform():
+        return {
+            "bundled": False,
+            "running": _api_reachable(),
+            "model": ollama_model(),
+            "model_ready": _model_installed(ollama_model()) if _api_reachable() else False,
+        }
+
     marker = app_support_dir() / _SETUP_MARKER
     has_zip = bundled_ollama_zip() is not None
     out: dict[str, object] = {
@@ -296,6 +327,8 @@ def ensure_ollama_setup() -> dict[str, object]:
 
 def ensure_ollama_async() -> None:
     if os.environ.get("FLX_SKIP_OLLAMA_SETUP") == "1":
+        return
+    if is_mobile_platform():
         return
 
     def _run() -> None:

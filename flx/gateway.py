@@ -90,13 +90,17 @@ class GatewayWorker:
         if "?" not in url:
             url = f"{url}?v=1&encoding=json"
 
+        from flx.ssl_certs import ssl_context
+
+        ws_ssl = ssl_context()
+
         heartbeat_interval = 41250
         seq: int | None = None
         heartbeat_task: asyncio.Task | None = None
 
         while not self._stop.is_set():
             try:
-                async with websockets.connect(url, max_size=2**20) as ws:
+                async with websockets.connect(url, max_size=2**20, ssl=ws_ssl) as ws:
                     identified = False
                     while not self._stop.is_set():
                         raw = await asyncio.wait_for(ws.recv(), timeout=60)

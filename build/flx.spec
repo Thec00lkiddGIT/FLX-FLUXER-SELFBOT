@@ -128,5 +128,5 @@ if sys.platform == "darwin":
         coll,
         name="FLX.app",
         icon=str(ICON_ICNS) if ICON_ICNS.is_file() else None,
-        bundle_identifier="app.fluxer.flx",
+        bundle_identifier="com.flx.app",
     )

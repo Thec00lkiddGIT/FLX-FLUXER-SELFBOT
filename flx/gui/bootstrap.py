@@ -8,10 +8,12 @@ from flx.community_hub import ensure_community_hub
 from flx.ollama_runtime import ensure_ollama_async
 from flx.paths import ensure_env_file, ensure_script_hub
 from flx.runtime import get_runtime
+from flx.ssl_certs import install as install_ssl_certs
 from flx.state import load_gui_settings
 
 
 def prepare_runtime(*, autostart: bool | None = None) -> None:
+    install_ssl_certs()
     ensure_env_file()
     ensure_script_hub()
     ensure_community_hub()

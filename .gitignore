@@ -3,6 +3,7 @@ dist/
 scripts/ollama/Ollama.app/
 scripts/ollama/Ollama-darwin.zip
 build/flx/
+build/app/
 build/pyinstaller/
 .venv/
 .venv-build/

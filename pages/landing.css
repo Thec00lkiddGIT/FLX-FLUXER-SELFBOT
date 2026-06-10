@@ -365,7 +365,7 @@ main { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; paddin
 
 .download-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
   gap: 14px;
 }
 
@@ -391,6 +391,23 @@ main { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; paddin
   height: 36px;
   border-radius: 10px;
   background: linear-gradient(135deg, rgba(91, 140, 255, 0.25), rgba(124, 92, 255, 0.2));
+}
+
+.download-card.highlight {
+  border-color: rgba(91, 140, 255, 0.35);
+  box-shadow: 0 0 24px rgba(91, 140, 255, 0.12);
+}
+
+.dl-icon.ios {
+  background: linear-gradient(135deg, rgba(99, 130, 220, 0.35), rgba(91, 140, 255, 0.2));
+}
+
+.dl-icon.android {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.3), rgba(34, 197, 94, 0.18));
+}
+
+.dl-icon.mac {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.3), rgba(100, 116, 139, 0.2));
 }
 
 .site-footer {

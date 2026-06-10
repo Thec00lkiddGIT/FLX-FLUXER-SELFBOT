@@ -284,12 +284,12 @@ function setTextAll(selector, text) {
 }
 
 function applyPlatformChrome(s) {
-  const ios = s.platform === "ios";
-  if (ios !== isIos) {
-    isIos = ios;
-    document.body.classList.toggle("ios", ios);
+  const mobile = s.platform === "ios" || s.platform === "android";
+  if (mobile !== isIos) {
+    isIos = mobile;
+    document.body.classList.toggle("ios", mobile);
   }
-  document.querySelector(".nav-assistant")?.classList.toggle("hidden", ios);
+  document.body.classList.toggle("mobile-shell", mobile);
 }
 
 function applyStatus(s) {
@@ -1108,14 +1108,35 @@ function appendAssistantMessage(role, content, html) {
 async function refreshAssistantStatus() {
   const dot = el("assistant-dot");
   const text = el("assistant-status-text");
+  const mobileNote = el("assistant-mobile-note");
   try {
     const st = await api("/api/assistant/status");
+    if (mobileNote) {
+      mobileNote.classList.toggle(
+        "hidden",
+        !(st.mobile && (st.remote_required || !st.ok))
+      );
+      if (st.remote_required) {
+        mobileNote.innerHTML =
+          "<p><strong>Mobile setup:</strong> FLX AI runs on your Mac, not on the phone. " +
+          "Open Ollama on the Mac, turn on network access, then add " +
+          "<code>OLLAMA_BASE_URL=http://YOUR_MAC_IP:11434</code> to " +
+          "<code>config.env</code> (Files → FLX → Flx).</p>";
+      } else if (st.mobile && !st.ok) {
+        mobileNote.innerHTML =
+          `<p class="muted">${escapeHtml(st.error || "Cannot reach Ollama on your Mac.")}</p>`;
+      }
+    }
     if (st.ok) {
       dot?.classList.add("ok");
       dot?.classList.remove("err");
       const model = st.model || "llama";
       const tag = st.bundled ? "bundled · " : "";
       text.textContent = st.warning ? st.warning : `${tag}Ollama · ${model}`;
+    } else if (st.remote_required) {
+      dot?.classList.add("err");
+      dot?.classList.remove("ok");
+      text.textContent = "Set OLLAMA_BASE_URL to your Mac";
     } else if (st.starting || st.bundled) {
       dot?.classList.remove("ok");
       dot?.classList.remove("err");
@@ -1222,6 +1243,17 @@ setupControls();
 setupTokenModal();
 setupAssistant();
 setupScriptHub();
+(function detectMobileShell() {
+  const ua = navigator.userAgent || "";
+  const appleMobile =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(ua);
+  if (appleMobile || android || window.matchMedia("(max-width: 720px)").matches) {
+    document.body.classList.add("ios", "mobile-shell");
+    isIos = true;
+  }
+})();
 refreshStatus();
 refreshScripts();
 refreshCommunityScripts();

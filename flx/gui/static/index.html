@@ -30,9 +30,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           <span class="nav-label">Scripts</span>
         </button>
-        <button class="nav-item nav-assistant" title="FLX Assistant" data-page="assistant" data-label="Assistant">
+        <button class="nav-item nav-assistant" title="FLX Assistant" data-page="assistant" data-label="AI">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
-          <span class="nav-label">Assistant</span>
+          <span class="nav-label">AI</span>
         </button>
         <button class="nav-item" title="Settings" data-page="perms" data-label="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -260,13 +260,15 @@
           <header class="assistant-header">
             <div>
               <h2>FLX Assistant</h2>
-              <p class="muted">Local <strong>Llama</strong> via bundled <strong>Ollama</strong> — ask for FlxScripts, FLX help, or Fluxer tips. First launch may download the model; everything stays on your Mac.</p>
+              <p class="muted assistant-desktop-note">Local <strong>Llama</strong> via bundled <strong>Ollama</strong> — ask for FlxScripts, FLX help, or Fluxer tips. First launch may download the model; everything stays on your Mac.</p>
+              <p class="muted assistant-mobile-note hidden">On iPhone/iPad, FLX AI uses <strong>Ollama on your Mac</strong> over Wi‑Fi (see setup note below).</p>
             </div>
             <div class="assistant-status glass" id="assistant-status-pill">
               <span class="assistant-dot" id="assistant-dot"></span>
               <span id="assistant-status-text">Checking Ollama…</span>
             </div>
           </header>
+          <div class="assistant-mobile-setup hidden glass" id="assistant-mobile-note"></div>
           <div class="assistant-layout glass">
             <div class="assistant-messages" id="assistant-messages" role="log" aria-live="polite">
               <div class="assistant-msg assistant-msg-bot">

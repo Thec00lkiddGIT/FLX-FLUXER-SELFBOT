@@ -39,10 +39,44 @@ def _require(key: str, label: str | None = None) -> str:
     return value
 
 
-def fluxer_token() -> str:
-    token = _require("FLUXER_TOKEN", "FLUXER_TOKEN")
+def _normalize_token(raw: str) -> str:
+    token = raw.strip()
     if token.lower().startswith("bearer "):
         token = token[7:].strip()
+    return token
+
+
+def has_fluxer_token() -> bool:
+    load_dotenv()
+    return bool(_normalize_token(os.environ.get("FLUXER_TOKEN", "")))
+
+
+def fluxer_token() -> str:
+    token = _normalize_token(_require("FLUXER_TOKEN", "FLUXER_TOKEN"))
+    if not token:
+        raise ValueError(f"Missing FLUXER_TOKEN. Edit {config_env_path()}")
+    return token
+
+
+def set_fluxer_token(raw: str) -> str:
+    """Save FLUXER_TOKEN to config.env and the current process."""
+    token = _normalize_token(raw)
+    if not token:
+        raise ValueError("Token can't be empty.")
+    path = ensure_env_file()
+    lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    out: list[str] = []
+    found = False
+    for line in lines:
+        if line.strip().startswith("FLUXER_TOKEN="):
+            out.append(f"FLUXER_TOKEN={token}")
+            found = True
+        else:
+            out.append(line)
+    if not found:
+        out.append(f"FLUXER_TOKEN={token}")
+    path.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+    os.environ["FLUXER_TOKEN"] = token
     return token
 
 

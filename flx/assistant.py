@@ -10,8 +10,11 @@ from typing import Any
 
 from flx.config import ollama_base_url, ollama_model
 from flx.ollama_runtime import (
+    MOBILE_OLLAMA_HINT,
     ensure_model_ready,
+    is_mobile_platform,
     launch_ollama,
+    ollama_is_localhost,
     pull_default_model,
     pull_model_via_api,
     runtime_info,
@@ -137,6 +140,7 @@ def guess_script_meta(code: str) -> dict[str, str]:
 def ollama_status() -> dict[str, Any]:
     base = ollama_base_url()
     model = ollama_model()
+    mobile = is_mobile_platform()
     rt = runtime_info()
     out: dict[str, Any] = {
         "ok": False,
@@ -146,7 +150,15 @@ def ollama_status() -> dict[str, Any]:
         "error": "",
         "bundled": rt.get("bundled_app"),
         "starting": False,
+        "mobile": mobile,
+        "remote_required": mobile and ollama_is_localhost(base),
     }
+    if out["remote_required"]:
+        out["error"] = MOBILE_OLLAMA_HINT
+        return out
+    if mobile and not rt.get("api_up"):
+        out["error"] = f"Cannot reach Ollama at {base}. Check your Mac is on the same Wi‑Fi and Ollama is running."
+        return out
     if not rt.get("api_up"):
         if rt.get("bundled_app") or rt.get("installed_app") or rt.get("cli"):
             out["starting"] = True
@@ -199,6 +211,8 @@ def chat_completion(
     """Send chat to Ollama. messages: role/content dicts (user/assistant/system)."""
     base = ollama_base_url()
     model = ollama_model()
+    if is_mobile_platform() and ollama_is_localhost(base):
+        raise RuntimeError(MOBILE_OLLAMA_HINT)
     if not _pulled:
         ensure_model_ready(blocking=False)
     payload = {

@@ -26,6 +26,10 @@ OSINT_INDUSTRIES_KEY=
 
 # Poof.bg (!poof) - https://docs.poof.bg
 POOF_API_KEY=
+
+# FLX Assistant (Ollama). On iPhone/iPad point at your Mac: OLLAMA_BASE_URL=http://192.168.x.x:11434
+# OLLAMA_BASE_URL=http://127.0.0.1:11434
+# OLLAMA_MODEL=llama3.2
 """
 
 
@@ -36,6 +40,8 @@ def project_root() -> Path:
 
 
 def app_support_dir() -> Path:
+    if sys.platform in ("ios", "android"):
+        return Path.home() / "Documents" / APP_NAME if sys.platform == "ios" else Path.home() / APP_NAME
     if sys.platform == "win32":
         base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
         return base / APP_NAME
@@ -47,7 +53,49 @@ def app_support_dir() -> Path:
 def ensure_app_support() -> Path:
     support = app_support_dir()
     support.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "ios":
+        _ensure_ios_files_readme(support)
+    elif sys.platform == "android":
+        _ensure_android_files_readme(support)
     return support
+
+
+def _ensure_android_files_readme(support: Path) -> None:
+    readme = support / "README.txt"
+    if readme.is_file():
+        return
+    readme.write_text(
+        """FLX data folder
+
+Config and scripts live in the app's private storage:
+  config.env     — your Fluxer token and settings
+  scripts/hub/   — your Script Hub scripts
+
+Use Settings → Enter token inside FLX to set your token.
+""",
+        encoding="utf-8",
+    )
+
+
+def _ensure_ios_files_readme(support: Path) -> None:
+    readme = support / "README.txt"
+    if readme.is_file():
+        return
+    readme.write_text(
+        """FLX data folder
+
+Open in the Files app:
+  Files → On My iPhone → FLX → Flx
+
+Files here:
+  config.env     — your Fluxer token and settings
+  scripts/hub/   — your Script Hub scripts
+
+You can edit config.env in Files with a text editor app.
+Or use Settings → Enter token inside FLX.
+""",
+        encoding="utf-8",
+    )
 
 
 def env_file() -> Path:
@@ -220,6 +268,9 @@ def ensure_script_hub() -> Path:
 
 def open_env_in_editor() -> bool:
     import subprocess
+
+    if sys.platform in ("ios", "android"):
+        return False
 
     path = ensure_env_file()
     try:

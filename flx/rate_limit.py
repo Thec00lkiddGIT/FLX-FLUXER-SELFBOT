@@ -160,7 +160,10 @@ def urlopen_with_rate_limit(
 
     for attempt in range(MAX_ATTEMPTS):
         try:
-            return urllib.request.urlopen(req, timeout=timeout)
+            from flx.ssl_certs import install, ssl_context
+
+            install()
+            return urllib.request.urlopen(req, timeout=timeout, context=ssl_context())
         except urllib.error.HTTPError as exc:
             last_status = exc.code
             last_body = exc.read()

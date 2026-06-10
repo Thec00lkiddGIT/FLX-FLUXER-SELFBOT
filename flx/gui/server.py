@@ -390,6 +390,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             _json_response(self, 200, {"ok": ok, "path": config_env_path()})
             return
 
+        if action == "save_token":
+            from flx.config import set_fluxer_token
+
+            token = str(data.get("token", ""))
+            try:
+                set_fluxer_token(token)
+            except ValueError as exc:
+                _json_response(self, 400, {"ok": False, "error": str(exc)})
+                return
+            _json_response(self, 200, {"ok": True, "path": config_env_path()})
+            return
+
         if action == "abuse_confirm":
             from flx.abuse_settings import confirm_abuse_mode
 
